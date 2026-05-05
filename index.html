@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RepoStudio 3D - GitHub-style Editor</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --orange: #d2991d;
+            --red: #f85149;
+            --purple: #bc8cff;
+            --glass: rgba(22, 27, 34, 0.88);
+            --glass-border: rgba(48, 54, 61, 0.65);
+            --radius: 11px;
+            --shadow: 0 8px 32px rgba(0,0,0,0.45);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #0d1117;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #loading-screen .loader-logo {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            animation: float 2s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-14px); }
+        }
+        #loading-screen .loader-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            letter-spacing: -0.4px;
+        }
+        .progress-container {
+            width: 340px;
+            max-width: 80vw;
+            height: 5px;
+            background: #21262d;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #58a6ff, #3fb950);
+            border-radius: 3px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        #loading-status {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            text-align: center;
+        }
+        .app-container {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+        .app-container.ready {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .header {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon {
+            width: 34px; height: 34px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .header h1 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        .header-right {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 7px 14px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+        .btn:hover {
+            border-color: var(--accent);
+            background: #1c2533;
+        }
+        .btn-primary {
+            background: var(--green);
+            border-color: var(--green);
+            color: #000;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: #35a044;
+            border-color: #35a044;
+        }
+        .btn-sm {
+            padding: 4px 9px;
+            font-size: 0.7rem;
+            border-radius: 5px;
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        .badge-public {
+            background: rgba(63,185,80,0.15);
+            color: var(--green);
+            border: 1px solid rgba(63,185,80,0.3);
+        }
+        .badge-private {
+            background: rgba(248,81,73,0.15);
+            color: var(--red);
+            border: 1px solid rgba(248,81,73,0.3);
+        }
+        .badge-unlisted {
+            background: rgba(210,153,29,0.15);
+            color: var(--orange);
+            border: 1px solid rgba(210,153,29,0.3);
+        }
+        .badge-valid {
+            background: rgba(63,185,80,0.12);
+            color: var(--green);
+            border: 1px solid rgba(63,185,80,0.25);
+        }
+        .badge-errors {
+            background: rgba(248,81,73,0.12);
+            color: var(--red);
+            border: 1px solid rgba(248,81,73,0.25);
+            animation: pulse-err 1.5s infinite;
+        }
+        .badge-warnings {
+            background: rgba(210,153,29,0.12);
+            color: var(--orange);
+            border: 1px solid rgba(210,153,29,0.25);
+            animation: pulse-warn 2s infinite;
+        }
+        @keyframes pulse-err {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.65; }
+        }
+        @keyframes pulse-warn {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 10px;
+            padding: 10px;
+            overflow: hidden;
+            min-height: 0;
+        }
+        .sidebar {
+            width: 270px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+        }
+        .side-box {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .side-box.projects-box { flex: 2; min-height: 0; }
+        .side-box.ai-box { flex: 1; min-height: 140px; }
+        .box-header {
+            padding: 10px 13px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.73rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .count-badge {
+            background: var(--border);
+            color: var(--text-secondary);
+            padding: 2px 7px;
+            border-radius: 9px;
+            font-size: 0.65rem;
+        }
+        .project-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px;
+        }
+        .project-card {
+            padding: 9px 11px;
+            margin-bottom: 3px;
+            border-radius: 7px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.015);
+            position: relative;
+            font-size: 0.78rem;
+        }
+        .project-card:hover {
+            border-color: var(--border);
+            background: rgba(255,255,255,0.035);
+        }
+        .project-card.active {
+            border-color: var(--accent);
+            background: rgba(88,166,255,0.07);
+        }
+        .project-card .p-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .project-card .p-meta {
+            font-size: 0.66rem;
+            color: var(--text-secondary);
+        }
+        .project-card .delete-btn {
+            position: absolute;
+            right: 9px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            background: none;
+            border: none;
+            color: var(--red);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .project-card:hover .delete-btn { opacity: 1; }
+        .ai-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            font-size: 0.72rem;
+            min-height: 0;
+        }
+        .ai-msg {
+            padding: 7px 10px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            background: rgba(188,140,255,0.05);
+            border-left: 2px solid var(--purple);
+            cursor: pointer;
+            transition: all 0.2s;
+            line-height: 1.4;
+        }
+        .ai-msg:hover {
+            background: rgba(188,140,255,0.1);
+            border-left-color: var(--accent);
+        }
+        .ai-msg .ai-label {
+            font-size: 0.6rem;
+            color: var(--purple);
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .ai-input-row {
+            display: flex;
+            gap: 5px;
+            padding: 7px;
+            border-top: 1px solid var(--border);
+        }
+        .ai-input-row input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 9px;
+            color: var(--text);
+            font-size: 0.72rem;
+            outline: none;
+            min-width: 0;
+        }
+        .ai-input-row input:focus { border-color: var(--accent); }
+        .ai-input-row button { flex-shrink: 0; }
+        .ai-status {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            padding: 3px 10px;
+            text-align: center;
+        }
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+        .panel-box {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+        .panel-box.editor-box { flex: 1; }
+        .panel-box.preview-box { flex: 1; }
+        .console-box { height: 130px; flex-shrink: 0; }
+        .panel-header {
+            padding: 9px 13px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.73rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot.html { background: #e34c26; }
+        .dot.preview { background: var(--green); }
+        .dot.console { background: var(--orange); }
+        .status-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.67rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+        }
+        .status-item.ok { color: var(--green); }
+        .status-item.warn { color: var(--orange); }
+        .status-item.err { color: var(--red); }
+        .editor-wrapper {
+            position: relative;
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+        .line-numbers {
+            width: 46px;
+            flex-shrink: 0;
+            background: rgba(0,0,0,0.22);
+            padding: 12px 0;
+            text-align: right;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            user-select: none;
+            line-height: 1.6;
+            white-space: pre;
+            border-right: 1px solid var(--border);
+        }
+        .code-editor {
+            flex: 1;
+            width: 100%;
+            border: none;
+            resize: none;
+            background: transparent;
+            color: var(--text);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 0.78rem;
+            padding: 12px 14px;
+            line-height: 1.6;
+            outline: none;
+            tab-size: 2;
+            min-height: 0;
+            white-space: pre;
+            overflow: auto;
+        }
+        .code-editor::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.35;
+        }
+        .preview-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: #fff;
+            min-height: 0;
+        }
+        .console-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.68rem;
+            line-height: 1.45;
+            min-height: 0;
+            background: rgba(0,0,0,0.25);
+        }
+        .console-line {
+            padding: 2px 0;
+            display: flex;
+            gap: 7px;
+            align-items: flex-start;
+        }
+        .console-line .ts {
+            color: var(--text-secondary);
+            opacity: 0.55;
+            flex-shrink: 0;
+            font-size: 0.62rem;
+            min-width: 68px;
+        }
+        .console-line.err { color: var(--red); }
+        .console-line.warn { color: var(--orange); }
+        .console-line.info { color: var(--accent); }
+        .console-line.ok { color: var(--green); }
+        .console-empty {
+            color: var(--text-secondary);
+            opacity: 0.45;
+            font-style: italic;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 26px;
+            width: 430px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.65);
+        }
+        .modal h2 { margin-bottom: 18px; font-size: 1.05rem; }
+        .modal label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        .modal input, .modal textarea, .modal select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.85rem;
+            margin-bottom: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .modal input:focus, .modal textarea:focus, .modal select:focus {
+            border-color: var(--accent);
+        }
+        .modal select { cursor: pointer; }
+        .modal-actions {
+            display: flex;
+            gap: 9px;
+            justify-content: flex-end;
+        }
+        .help-text {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            margin-top: -8px;
+            margin-bottom: 12px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--green);
+            color: #000;
+            padding: 9px 20px;
+            border-radius: 7px;
+            font-weight: 600;
+            font-size: 0.78rem;
+            z-index: 300;
+            transition: transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+            pointer-events: none;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.error-toast {
+            background: var(--red);
+            color: #fff;
+        }
+        .watermark-info {
+            font-size: 0.62rem;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 3px;
+            opacity: 0.6;
+        }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        @media (max-width: 860px) {
+            .main-content { flex-direction: column; padding: 6px; gap: 6px; }
+            .sidebar { width: 100%; flex-direction: row; gap: 6px; }
+            .side-box { flex: 1; min-width: 0; }
+            .side-box.projects-box { flex: 1; }
+            .side-box.ai-box { flex: 1; min-height: auto; }
+            .console-box { height: 110px; }
+            .header { padding: 9px 12px; }
+            .header h1 { font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="loading-screen">
+        <div class="loader-logo">⏣</div>
+        <div class="loader-title">RepoStudio 3D</div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div id="loading-status">Iniciando motores...</div>
+    </div>
+
+    <div class="app-container" id="appContainer">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo-icon">⏣</div>
+                <h1>RepoStudio 3D</h1>
+                <span class="badge badge-valid" id="validationBadge">✓ SIN CÓDIGO</span>
+                <span class="badge badge-public" id="visibilityBadge" style="display:none;">🌐 Público</span>
+            </div>
+            <div class="header-right">
+                <span style="font-size:0.7rem;color:var(--text-secondary);" id="aiStatusLabel">🧠 IA: Cargando...</span>
+                <button class="btn btn-sm" onclick="clearConsole()" title="Limpiar consola">🧹</button>
+                <button class="btn btn-sm" onclick="exportProject()" title="Exportar con marca de agua">📥 Exportar</button>
+                <button class="btn btn-primary" onclick="openModal()">+ Nuevo proyecto</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="side-box projects-box">
+                    <div class="box-header">📁 Proyectos <span class="count-badge" id="projectCount">0</span></div>
+                    <div class="project-list" id="projectList"></div>
+                </div>
+                <div class="side-box ai-box">
+                    <div class="box-header">🧠 Asistente IA <span class="count-badge" id="aiMsgCount">0</span></div>
+                    <div class="ai-messages" id="aiMessages">
+                        <div style="color:var(--text-secondary);font-size:0.7rem;padding:10px;text-align:center;opacity:0.6;">La IA analizará tu código automáticamente</div>
+                    </div>
+                    <div class="ai-input-row">
+                        <input type="text" id="aiInput" placeholder="Pregunta sobre tu código..." maxlength="200" onkeydown="if(event.key==='Enter')askAI()">
+                        <button class="btn btn-sm btn-primary" onclick="askAI()">→</button>
+                    </div>
+                    <div class="ai-status" id="aiStatusDetail">Modelo no cargado</div>
+                </div>
+            </aside>
+
+            <div class="editor-panel">
+                <div class="panel-box editor-box">
+                    <div class="panel-header">
+                        <div class="panel-header-left"><span class="dot html"></span> Editor HTML</div>
+                        <div class="status-row">
+                            <span class="status-item ok" id="linesCount">📄 Líneas: 0</span>
+                            <span class="status-item" id="charsCount">📝 Caracteres: 0</span>
+                            <span class="status-item" id="tagsStatus">🔖 Tags: 0</span>
+                        </div>
+                    </div>
+                    <div class="editor-wrapper">
+                        <div class="line-numbers" id="lineNumbers">1</div>
+                        <textarea class="code-editor" id="codeEditor" placeholder="<!-- Pega tu código HTML aquí o escribe desde cero -->" spellcheck="false"></textarea>
+                    </div>
+                </div>
+                <div class="panel-box preview-box">
+                    <div class="panel-header">
+                        <div class="panel-header-left"><span class="dot preview"></span> Vista previa</div>
+                    </div>
+                    <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+                </div>
+                <div class="panel-box console-box">
+                    <div class="panel-header">
+                        <div class="panel-header-left"><span class="dot console"></span> Consola de validación</div>
+                        <span class="status-item" id="consoleErrorCount" style="font-size:0.65rem;">Errores: 0 | Warnings: 0</span>
+                    </div>
+                    <div class="console-output" id="consoleOutput">
+                        <div class="console-empty">✨ Consola lista. Escribe HTML para validar...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="watermark-info">💧 Los proyectos exportados incluyen marca de agua automática con tu autoría</div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2>✨ Nuevo proyecto</h2>
+            <label>Nombre del proyecto</label>
+            <input type="text" id="projectName" placeholder="mi-proyecto" maxlength="50">
+            <label>Descripción (opcional)</label>
+            <textarea id="projectDesc" rows="2" maxlength="200" placeholder="Breve descripción..."></textarea>
+            <label>Visibilidad</label>
+            <select id="projectVisibility">
+                <option value="public">🌐 Público - Visible para todos</option>
+                <option value="unlisted">👁 No listado - Solo con ID directo</option>
+                <option value="private">🔒 Privado - Protegido con contraseña</option>
+            </select>
+            <div id="passwordField" style="display:none;">
+                <label>Contraseña (obligatorio para privado)</label>
+                <input type="password" id="projectPassword" placeholder="Mínimo 4 caracteres" maxlength="50">
+                <p class="help-text">⚠️ Sin esta contraseña NADIE podrá ver el código. Guárdala bien.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="createProject()">Crear proyecto</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="passwordModalOverlay">
+        <div class="modal">
+            <h2>🔒 Proyecto privado</h2>
+            <p style="font-size:0.82rem;margin-bottom:14px;color:var(--text-secondary);">Este proyecto está protegido. Ingresa la contraseña para acceder.</p>
+            <input type="password" id="unlockPassword" placeholder="Contraseña" maxlength="50">
+            <div class="modal-actions">
+                <button class="btn" onclick="closePasswordModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="unlockProject()">Desbloquear</button>
+            </div>
+            <p id="passwordError" style="color:var(--red);font-size:0.72rem;margin-top:8px;display:none;">❌ Contraseña incorrecta</p>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        const loadingScreen = document.getElementById('loading-screen');
+        const progressBar = document.getElementById('progressBar');
+        const loadingStatus = document.getElementById('loading-status');
+        const appContainer = document.getElementById('appContainer');
+
+        let assetsLoaded = 0;
+        const totalAssets = 12;
+        function updateProgress(increment = 1, message = '') {
+            assetsLoaded += increment;
+            const pct = Math.round((assetsLoaded / totalAssets) * 100);
+            progressBar.style.width = pct + '%';
+            if (message) loadingStatus.textContent = message;
+        }
+        updateProgress(1, 'Inicializando WebGL...');
+
+        const canvas = document.getElementById('bg-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        updateProgress(1, 'Configurando renderizador...');
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
+        camera.position.set(0, 1.5, 19);
+        updateProgress(1, 'Preparando cámara...');
+
+        scene.add(new THREE.AmbientLight(0x282840, 2.2));
+        const pl1 = new THREE.PointLight(0x58a6ff, 50, 42);
+        pl1.position.set(9, 5, 6);
+        scene.add(pl1);
+        const pl2 = new THREE.PointLight(0x3fb950, 32, 36);
+        pl2.position.set(-7, -3, -5);
+        scene.add(pl2);
+        const pl3 = new THREE.PointLight(0xd2991d, 28, 32);
+        pl3.position.set(3, -7, 9);
+        scene.add(pl3);
+        updateProgress(1, 'Colocando iluminación...');
+
+        const mainGroup = new THREE.Group();
+        scene.add(mainGroup);
+        updateProgress(1, 'Construyendo geometrías...');
+
+        const sphere = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(2.6, 4),
+            new THREE.MeshPhysicalMaterial({ color: 0x1a2332, metalness: 0.35, roughness: 0.18, clearcoat: 0.35, clearcoatRoughness: 0.3 })
+        );
+        mainGroup.add(sphere);
+        updateProgress(1, 'Renderizando esfera...');
+
+        const wireS = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(2.75, 4),
+            new THREE.MeshBasicMaterial({ color: 0x58a6ff, wireframe: true, transparent: true, opacity: 0.1 })
+        );
+        mainGroup.add(wireS);
+        updateProgress(1, 'Aplicando wireframe...');
+
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(4, 0.028, 20, 130),
+            new THREE.MeshStandardMaterial({ color: 0x58a6ff, emissive: 0x58a6ff, emissiveIntensity: 0.55, roughness: 0.25, metalness: 0.85 })
+        );
+        ring.rotation.set(Math.PI/3.2, Math.PI/5.5, 0);
+        mainGroup.add(ring);
+
+        const ring2 = new THREE.Mesh(
+            new THREE.TorusGeometry(4.5, 0.025, 18, 110),
+            new THREE.MeshStandardMaterial({ color: 0x3fb950, emissive: 0x3fb950, emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.75 })
+        );
+        ring2.rotation.set(-Math.PI/3.8, -Math.PI/4.5, 0);
+        mainGroup.add(ring2);
+        updateProgress(1, 'Trazando órbitas...');
+
+        const pCount = 380;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(pCount * 3);
+        const pCol = new Float32Array(pCount * 3);
+        const palette = [new THREE.Color(0x58a6ff), new THREE.Color(0x3fb950), new THREE.Color(0xd2991d), new THREE.Color(0xf85149), new THREE.Color(0xbc8cff)];
+        for (let i = 0; i < pCount; i++) {
+            const th = Math.random() * Math.PI * 2, ph = Math.random() * Math.PI * 2, r = 5.5 + Math.random() * 13;
+            pPos[i*3] = Math.cos(th) * Math.sin(ph) * r;
+            pPos[i*3+1] = Math.sin(th) * Math.sin(ph) * r;
+            pPos[i*3+2] = Math.cos(ph) * r;
+            const c = palette[Math.floor(Math.random() * palette.length)];
+            pCol[i*3] = c.r; pCol[i*3+1] = c.g; pCol[i*3+2] = c.b;
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+        const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.044, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.65 }));
+        scene.add(particles);
+        updateProgress(1, 'Esparciendo partículas...');
+
+        const cubesGroup = new THREE.Group();
+        for (let i = 0; i < 16; i++) {
+            const s = 0.08 + Math.random() * 0.25;
+            const cube = new THREE.Mesh(
+                new THREE.BoxGeometry(s, s, s),
+                new THREE.MeshStandardMaterial({ color: palette[Math.floor(Math.random()*palette.length)], roughness: 0.25, metalness: 0.7, emissive: palette[Math.floor(Math.random()*palette.length)], emissiveIntensity: 0.3 })
+            );
+            cube.position.set((Math.random()-0.5)*15, (Math.random()-0.5)*15, (Math.random()-0.5)*11);
+            cube.userData = { speed: 0.002 + Math.random()*0.009, axis: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize(), fs: 0.25 + Math.random()*0.8, fa: 0.4 + Math.random()*1.8, iY: cube.position.y };
+            cubesGroup.add(cube);
+        }
+        scene.add(cubesGroup);
+        updateProgress(1, 'Posicionando cubos orbitales...');
+
+        const mouse = { x: 0, y: 0 }, target = { x: 0, y: 0 };
+        window.addEventListener('mousemove', (e) => { target.x = (e.clientX / window.innerWidth)*2-1; target.y = -(e.clientY / window.innerHeight)*2+1; });
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1), t = performance.now() * 0.001;
+            mouse.x += (target.x - mouse.x) * 0.035;
+            mouse.y += (target.y - mouse.y) * 0.035;
+            mainGroup.rotation.y += dt * 0.13;
+            mainGroup.position.x += (mouse.x * 1.6 - mainGroup.position.x) * 0.025;
+            mainGroup.position.y += (mouse.y * 0.9 - mainGroup.position.y) * 0.025;
+            ring.rotation.z += dt * 0.24;
+            ring2.rotation.z -= dt * 0.2;
+            particles.rotation.y += dt * 0.035;
+            particles.rotation.x += dt * 0.018;
+            cubesGroup.children.forEach(c => { c.rotateOnWorldAxis(c.userData.axis, c.userData.speed); c.position.y = c.userData.iY + Math.sin(t * c.userData.fs) * c.userData.fa; });
+            pl1.intensity = 46 + Math.sin(t*0.7)*7;
+            pl2.intensity = 28 + Math.cos(t*0.9)*5;
+            renderer.render(scene, camera);
+        }
+        updateProgress(1, 'Iniciando animación...');
+        animate();
+        updateProgress(1, 'Completando carga 3D...');
+        window._threeReady = true;
+        console.log('🎨 Escena 3D iniciada');
+    </script>
+
+    <script>
+        const STORAGE_KEY = 'repostudio3d_v2_projects';
+        const ACTIVE_KEY = 'repostudio3d_v2_active';
+        let currentUnlockId = null;
+        let aiReady = false;
+        let aiModel = null;
+        let aiAnalyzing = false;
+
+        function finishLoading() {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('appContainer').classList.add('ready');
+        }
+        function waitForThree() {
+            if (window._threeReady) return;
+            setTimeout(waitForThree, 300);
+        }
+        function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+        function escapeAttr(text) { return text.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function timeAgo(ts) { const diff = Date.now() - ts; const s = Math.floor(diff/1000), m = Math.floor(s/60), h = Math.floor(m/60), d = Math.floor(h/24); if (d>0) return `hace ${d}d`; if (h>0) return `hace ${h}h`; if (m>0) return `hace ${m}m`; return 'ahora'; }
+        function generateId() { return 'proj_'+Date.now()+'_'+Math.random().toString(36).substr(2,8); }
+        function showToast(msg, isError=false, duration=2200) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast' + (isError ? ' error-toast' : '');
+            t.classList.add('show');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), duration);
+        }
+        function getProjects() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+        function saveProjects(p) { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }
+        function getActiveId() { return localStorage.getItem(ACTIVE_KEY) || null; }
+        function setActiveId(id) { localStorage.setItem(ACTIVE_KEY, id); }
+
+        function renderProjectList() {
+            const projects = getProjects();
+            const activeId = getActiveId();
+            const container = document.getElementById('projectList');
+            document.getElementById('projectCount').textContent = projects.length;
+            if (projects.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:28px 14px;font-size:0.78rem;"><span style="font-size:2rem;display:block;margin-bottom:8px;">📭</span>Aún no hay proyectos</div>';
+                return;
+            }
+            container.innerHTML = projects.map(p => {
+                let visIcon = '🌐', visClass = 'badge-public';
+                if (p.visibility === 'private') { visIcon = '🔒'; visClass = 'badge-private'; }
+                if (p.visibility === 'unlisted') { visIcon = '👁'; visClass = 'badge-unlisted'; }
+                return `<div class="project-card ${p.id===activeId?'active':''}" onclick="selectProject('${p.id}')"><div class="p-name"><span style="font-size:0.65rem;">${visIcon}</span> ${escapeHtml(p.name)}</div><div class="p-meta">${escapeHtml(p.desc||'Sin descripción')} · ${timeAgo(p.updatedAt)}</div><button class="delete-btn" onclick="event.stopPropagation();deleteProject('${p.id}')" title="Eliminar">🗑</button></div>`;
+            }).join('');
+        }
+
+        function selectProject(id) {
+            const projects = getProjects();
+            const p = projects.find(x => x.id === id);
+            if (!p) return;
+            if (p.visibility === 'private' && p.encrypted && !p._unlocked) {
+                currentUnlockId = id;
+                document.getElementById('passwordError').style.display = 'none';
+                document.getElementById('unlockPassword').value = '';
+                document.getElementById('passwordModalOverlay').classList.add('show');
+                document.getElementById('unlockPassword').focus();
+                return;
+            }
+            loadProjectIntoEditor(p);
+        }
+
+        function loadProjectIntoEditor(p) {
+            setActiveId(p.id);
+            document.getElementById('codeEditor').value = p.code || '';
+            updateAll();
+            renderProjectList();
+            updateVisibilityBadge(p);
+            logToConsole('info', `📂 Proyecto abierto: "${p.name}" (${p.visibility})`);
+        }
+
+        function updateVisibilityBadge(p) {
+            const badge = document.getElementById('visibilityBadge');
+            badge.style.display = 'inline-block';
+            if (p.visibility === 'private') { badge.textContent = '🔒 Privado'; badge.className = 'badge badge-private'; }
+            else if (p.visibility === 'unlisted') { badge.textContent = '👁 No listado'; badge.className = 'badge badge-unlisted'; }
+            else { badge.textContent = '🌐 Público'; badge.className = 'badge badge-public'; }
+        }
+
+        function loadActiveProject() {
+            const activeId = getActiveId();
+            if (!activeId) return;
+            const p = getProjects().find(x => x.id === activeId);
+            if (!p) return;
+            if (p.visibility === 'private' && p.encrypted && !p._unlocked) return;
+            document.getElementById('codeEditor').value = p ? (p.code || '') : '';
+            updateAll();
+            if (p) updateVisibilityBadge(p);
+        }
+
+        async function deriveKey(password, salt) {
+            const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+            return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        }
+
+        async function encryptData(plaintext, password) {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveKey(password, salt);
+            const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext));
+            return { ciphertext: Array.from(new Uint8Array(encrypted)), iv: Array.from(iv), salt: Array.from(salt) };
+        }
+
+        async function decryptData(encryptedObj, password) {
+            const key = await deriveKey(password, new Uint8Array(encryptedObj.salt));
+            try {
+                const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(encryptedObj.iv) }, key, new Uint8Array(encryptedObj.ciphertext));
+                return new TextDecoder().decode(decrypted);
+            } catch { return null; }
+        }
+
+        function unlockProject() {
+            const password = document.getElementById('unlockPassword').value;
+            if (!password || !currentUnlockId) return;
+            const projects = getProjects();
+            const idx = projects.findIndex(x => x.id === currentUnlockId);
+            if (idx === -1) return;
+            const p = projects[idx];
+            decryptData(p.encrypted, password).then(plaintext => {
+                if (plaintext !== null) {
+                    p.code = plaintext;
+                    p._unlocked = true;
+                    saveProjects(projects);
+                    document.getElementById('passwordModalOverlay').classList.remove('show');
+                    document.getElementById('passwordError').style.display = 'none';
+                    loadProjectIntoEditor(p);
+                    logToConsole('ok', `🔓 Proyecto "${p.name}" desbloqueado`);
+                    showToast('🔓 Proyecto desbloqueado');
+                } else {
+                    document.getElementById('passwordError').style.display = 'block';
+                    document.getElementById('unlockPassword').value = '';
+                    document.getElementById('unlockPassword').focus();
+                }
+            });
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModalOverlay').classList.remove('show');
+            document.getElementById('passwordError').style.display = 'none';
+            currentUnlockId = null;
+        }
+
+        function saveCurrentProject() {
+            const activeId = getActiveId();
+            if (!activeId) return;
+            const projects = getProjects();
+            const idx = projects.findIndex(x => x.id === activeId);
+            if (idx === -1) return;
+            const p = projects[idx];
+            p.code = document.getElementById('codeEditor').value;
+            p.updatedAt = Date.now();
+            if (p.visibility === 'private' && p.password && p._unlocked) {
+                encryptData(p.code, p.password).then(enc => {
+                    p.encrypted = enc;
+                    const publicProjects = getProjects();
+                    const pi = publicProjects.findIndex(x => x.id === activeId);
+                    if (pi !== -1) { publicProjects[pi].encrypted = enc; publicProjects[pi].code = ''; saveProjects(publicProjects); }
+                });
+            } else { saveProjects(projects); }
+        }
+
+        function createProject() {
+            const name = document.getElementById('projectName').value.trim();
+            if (!name) { showToast('⚠️ El nombre es obligatorio', true); return; }
+            const desc = document.getElementById('projectDesc').value.trim();
+            const visibility = document.getElementById('projectVisibility').value;
+            const password = document.getElementById('projectPassword').value;
+            if (visibility === 'private' && password.length < 4) { showToast('⚠️ La contraseña debe tener al menos 4 caracteres', true); return; }
+            const np = { id: generateId(), name, desc, visibility, code: '', password: visibility==='private'?password:null, encrypted: null, _unlocked: visibility!=='private', createdAt: Date.now(), updatedAt: Date.now() };
+            if (visibility === 'private') { encryptData('', password).then(enc => { np.encrypted = enc; np.code = ''; finalizeCreate(np); }); }
+            else { finalizeCreate(np); }
+        }
+
+        function finalizeCreate(np) {
+            const projects = getProjects();
+            projects.unshift(np);
+            saveProjects(projects);
+            setActiveId(np.id);
+            document.getElementById('projectName').value = '';
+            document.getElementById('projectDesc').value = '';
+            document.getElementById('projectVisibility').value = 'public';
+            document.getElementById('projectPassword').value = '';
+            document.getElementById('passwordField').style.display = 'none';
+            closeModal();
+            renderProjectList();
+            loadProjectIntoEditor(np);
+            logToConsole('ok', `✅ Proyecto "${np.name}" creado como ${np.visibility}`);
+            showToast('✅ Proyecto creado');
+        }
+
+        function deleteProject(id) {
+            const p = getProjects().find(x => x.id === id);
+            if (!p) return;
+            if (!confirm(`¿Eliminar "${p.name}"? Esta acción no se puede deshacer.`)) return;
+            let projects = getProjects().filter(x => x.id !== id);
+            saveProjects(projects);
+            if (getActiveId() === id) {
+                if (projects.length > 0) { setActiveId(projects[0].id); selectProject(projects[0].id); }
+                else { localStorage.removeItem(ACTIVE_KEY); document.getElementById('codeEditor').value = ''; document.getElementById('visibilityBadge').style.display = 'none'; updateAll(); }
+            }
+            renderProjectList();
+            logToConsole('warn', `🗑 Proyecto eliminado: "${p.name}"`);
+            showToast('🗑 Proyecto eliminado');
+        }
+
+        function exportProject() {
+            const code = document.getElementById('codeEditor').value;
+            const activeId = getActiveId();
+            const p = getProjects().find(x => x.id === activeId);
+            const projectName = p ? p.name : 'proyecto';
+            const watermark = `\n<!-- ============================================ -->\n<!-- Exportado desde RepoStudio 3D -->\n<!-- Proyecto: ${escapeHtml(projectName)} -->\n<!-- Fecha: ${new Date().toISOString()} -->\n<!-- Autor protegido - No eliminar esta marca -->\n<!-- ============================================ -->\n`;
+            const finalCode = code.trim() ? code + watermark : watermark + '<!DOCTYPE html>\n<html>\n<head><title>RepoStudio Export</title></head>\n<body>\n</body>\n</html>';
+            const blob = new Blob([finalCode], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = projectName.replace(/[^a-zA-Z0-9_-]/g, '_') + '_export.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            logToConsole('ok', '📥 Proyecto exportado con marca de agua');
+            showToast('📥 Exportado con marca de agua');
+        }
+
+        function clearConsole() { window._consoleLog = []; renderConsole(); logToConsole('info', '🧹 Consola limpiada'); }
+        function openModal() { document.getElementById('modalOverlay').classList.add('show'); document.getElementById('projectName').focus(); document.getElementById('passwordField').style.display = 'none'; document.getElementById('projectVisibility').value = 'public'; }
+        function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+        document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('modalOverlay')) closeModal(); });
+        document.getElementById('passwordModalOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('passwordModalOverlay')) closePasswordModal(); });
+        document.getElementById('projectVisibility').addEventListener('change', function() { document.getElementById('passwordField').style.display = this.value === 'private' ? 'block' : 'none'; });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); closePasswordModal(); } if ((e.ctrlKey||e.metaKey)&&e.key==='s') { e.preventDefault(); saveCurrentProject(); showToast('💾 Guardado'); logToConsole('ok', '💾 Proyecto guardado'); } if ((e.ctrlKey||e.metaKey)&&e.key==='n') { e.preventDefault(); openModal(); } });
+
+        function validateHTML(code) {
+            const issues = [], warnings = [];
+            const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g;
+            const openTags = [];
+            const voidElements = ['br','hr','img','input','meta','link','area','base','col','embed','source','track','wbr'];
+            let match;
+            while ((match = tagRegex.exec(code)) !== null) {
+                const fullTag = match[0], tagName = match[1].toLowerCase(), isSelfClosing = fullTag.endsWith('/>'), isClosing = fullTag.startsWith('</');
+                if (!isClosing && !isSelfClosing && !voidElements.includes(tagName)) openTags.push({ name: tagName, index: match.index });
+                if (isClosing && !voidElements.includes(tagName)) {
+                    if (openTags.length>0 && openTags[openTags.length-1].name===tagName) openTags.pop();
+                    else if (openTags.length>0) issues.push(`⚠️ &lt;/${tagName}&gt; no coincide. Se esperaba &lt;/${openTags[openTags.length-1].name}&gt; (posición ${match.index})`);
+                }
+            }
+            openTags.forEach(t => issues.push(`❌ &lt;${t.name}&gt; sin cerrar (abierto cerca de posición ${t.index})`));
+            const hasDoctype = /<!DOCTYPE\s+html/i.test(code), hasHtmlTag = /<html[\s>]/i.test(code) && /<\/html>/i.test(code);
+            const hasHeadTag = /<head[\s>]/i.test(code) && /<\/head>/i.test(code), hasBodyTag = /<body[\s>]/i.test(code) && /<\/body>/i.test(code);
+            const hasTitleTag = /<title[\s>]/i.test(code) && /<\/title>/i.test(code);
+            if (!hasDoctype && code.trim().length>10) warnings.push('💡 Añade <!DOCTYPE html>');
+            if (!hasHtmlTag && code.trim().length>30) warnings.push('💡 Usa etiquetas &lt;html&gt;');
+            if (hasHtmlTag && !hasHeadTag) warnings.push('💡 Falta &lt;head&gt;');
+            if (hasHtmlTag && !hasBodyTag) warnings.push('💡 Falta &lt;body&gt;');
+            if (hasHeadTag && !hasTitleTag) warnings.push('💡 Añade &lt;title&gt; para mejor SEO');
+            const tagCount = (code.match(/<[a-zA-Z][a-zA-Z0-9]*[\s>]/g) || []).length;
+            const allIssues = [...issues, ...warnings];
+            return { allIssues, errors: issues.filter(i=>i.startsWith('❌')).length, warnsCount: warnings.length+issues.filter(i=>i.startsWith('⚠️')).length, total: allIssues.length, tagCount };
+        }
+
+        window._consoleLog = [];
+        function logToConsole(type, message) {
+            const time = new Date().toLocaleTimeString('es-CO', { hour12: false });
+            window._consoleLog.push({ type, message, time, ts: Date.now(), _validation: type==='error'||type==='warn' });
+            if (window._consoleLog.length > 120) window._consoleLog.shift();
+            renderConsole();
+        }
+        function renderConsole() {
+            const output = document.getElementById('consoleOutput'), errCount = document.getElementById('consoleErrorCount');
+            const errors = window._consoleLog.filter(l=>l.type==='error').length, warns = window._consoleLog.filter(l=>l.type==='warn').length;
+            errCount.textContent = `Errores: ${errors} | Warnings: ${warns}`;
+            if (window._consoleLog.length===0) { output.innerHTML = '<div class="console-empty">✨ Consola lista</div>'; return; }
+            output.innerHTML = window._consoleLog.map(l => { let cls='info'; if(l.type==='error')cls='err'; else if(l.type==='warn')cls='warn'; else if(l.type==='success'||l.type==='ok')cls='ok'; return `<div class="console-line ${cls}"><span class="ts">[${l.time}]</span><span>${l.message}</span></div>`; }).join('');
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateValidation() {
+            const code = document.getElementById('codeEditor').value, v = validateHTML(code), badge = document.getElementById('validationBadge');
+            window._consoleLog = window._consoleLog.filter(l=>!l._validation);
+            v.allIssues.forEach(issue => { const type = issue.startsWith('❌')?'error':'warn'; window._consoleLog.push({ type, message: issue, time: new Date().toLocaleTimeString('es-CO',{hour12:false}), ts: Date.now(), _validation: true }); });
+            if (code.trim().length>0 && v.total===0) window._consoleLog.push({ type:'ok', message:'✅ HTML válido - Sin errores detectados', time: new Date().toLocaleTimeString('es-CO',{hour12:false}), ts: Date.now(), _validation: true });
+            if (window._consoleLog.length>120) window._consoleLog.splice(0, window._consoleLog.length-120);
+            renderConsole();
+            if (code.trim().length===0) { badge.textContent = '○ SIN CÓDIGO'; badge.className = 'badge badge-valid'; }
+            else if (v.errors>0) { badge.textContent = `❌ ${v.errors} ERRORES`; badge.className = 'badge badge-errors'; }
+            else if (v.warnsCount>0) { badge.textContent = `⚠️ ${v.warnsCount} WARN`; badge.className = 'badge badge-warnings'; }
+            else { badge.textContent = '✓ VÁLIDO'; badge.className = 'badge badge-valid'; }
+            if (code.trim().length>20 && aiReady && !aiAnalyzing) { clearTimeout(window._aiDebounce); window._aiDebounce = setTimeout(()=>analyzeCodeWithAI(code), 2000); }
+        }
+
+        function updateCounters() {
+            const code = document.getElementById('codeEditor').value, lines = code.split('\n').length, chars = code.length;
+            const tagCount = (code.match(/<[a-zA-Z][a-zA-Z0-9]*[\s>]/g) || []).length;
+            document.getElementById('linesCount').textContent = `📄 Líneas: ${lines}`;
+            document.getElementById('charsCount').textContent = `📝 Caracteres: ${chars}`;
+            document.getElementById('tagsStatus').textContent = `🔖 Tags: ${tagCount}`;
+            document.getElementById('lineNumbers').innerHTML = Array.from({ length: Math.max(lines,1) }, (_,i)=>i+1).join('\n');
+        }
+
+        function updatePreview() {
+            clearTimeout(window._previewTimer);
+            window._previewTimer = setTimeout(() => {
+                const blob = new Blob([document.getElementById('codeEditor').value], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const frame = document.getElementById('previewFrame');
+                frame.src = url;
+                frame.onload = () => URL.revokeObjectURL(url);
+            }, 300);
+        }
+
+        function updateAll() { updateCounters(); updateValidation(); updatePreview(); saveCurrentProject(); }
+
+        function updateAIStatus(msg, ready=false) {
+            document.getElementById('aiStatusLabel').textContent = '🧠 IA: ' + msg;
+            document.getElementById('aiStatusDetail').textContent = msg;
+            if (ready) { aiReady = true; document.getElementById('aiStatusLabel').style.color = 'var(--green)'; }
+        }
+
+        function addAIMessage(text, type='analysis') {
+            const container = document.getElementById('aiMessages'), countEl = document.getElementById('aiMsgCount');
+            const existing = container.querySelectorAll('.ai-msg');
+            if (existing.length >= 20) existing[existing.length-1].remove();
+            const div = document.createElement('div');
+            div.className = 'ai-msg';
+            div.innerHTML = `<div class="ai-label">🤖 ${type==='answer'?'Respuesta':'Análisis'}</div>${escapeHtml(text.substring(0,300))}`;
+            div.onclick = () => applyAISuggestion(text);
+            container.insertBefore(div, container.firstChild);
+            countEl.textContent = container.querySelectorAll('.ai-msg').length;
+        }
+
+        function applyAISuggestion(text) {
+            const editor = document.getElementById('codeEditor');
+            const suggestion = `<!-- 🤖 Sugerencia de IA: ${text.substring(0,100).replace(/\n/g,' ')} -->\n`;
+            editor.value = editor.value ? editor.value + '\n' + suggestion : suggestion;
+            updateAll();
+            showToast('📋 Sugerencia aplicada');
+        }
+
+        async function initAI() {
+            updateAIStatus('Descargando modelo... (una sola vez)');
+            try {
+                if (typeof WebLLM === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.46/lib/index.min.js';
+                    script.onload = async () => { await loadModel(); };
+                    script.onerror = () => { updateAIStatus('No disponible'); document.getElementById('aiStatusLabel').style.color = 'var(--orange)'; };
+                    document.head.appendChild(script);
+                } else { await loadModel(); }
+            } catch (e) { console.error('Error IA:', e); updateAIStatus('Error al cargar'); document.getElementById('aiStatusLabel').style.color = 'var(--red)'; }
+        }
+
+        async function loadModel() {
+            aiModel = await WebLLM.CreateMLCEngine('Llama-3.2-1B-Instruct-q4f16_1-MLC', { initProgressCallback: (p) => updateAIStatus(`Cargando modelo... ${Math.round(p*100)}%`) });
+            updateAIStatus('Listo ✅', true);
+            logToConsole('ok', '🧠 IA cargada y lista');
+            const code = document.getElementById('codeEditor').value;
+            if (code.trim().length > 20) analyzeCodeWithAI(code);
+        }
+
+        async function analyzeCodeWithAI(code) {
+            if (!aiReady || !aiModel || aiAnalyzing) return;
+            aiAnalyzing = true;
+            try {
+                const prompt = `Eres un experto en HTML. Analiza este código y da 2-3 sugerencias BREVES (máximo 2 frases cada una) para mejorarlo. Sé específico y técnico. Responde en español.\n\nCódigo:\n\`\`\`html\n${code.substring(0,3000)}\n\`\`\``;
+                const response = await aiModel.chat.completions.create({ messages: [{ role: 'user', content: prompt }], max_tokens: 250, temperature: 0.5 });
+                const text = response.choices[0].message.content;
+                if (text && text.trim()) { text.split('\n').filter(l=>l.trim().length>10).slice(0,3).forEach(l=>addAIMessage(l.trim(), 'analysis')); }
+            } catch (e) { console.error('Error análisis IA:', e); }
+            aiAnalyzing = false;
+        }
+
+        async function askAI() {
+            const input = document.getElementById('aiInput'), question = input.value.trim();
+            if (!question) return;
+            if (!aiReady || !aiModel) { showToast('⚠️ La IA aún no está lista', true); return; }
+            input.value = '';
+            const code = document.getElementById('codeEditor').value;
+            const prompt = `Eres un experto en desarrollo web. El usuario tiene este código HTML:\n\`\`\`html\n${code.substring(0,2000)}\n\`\`\`\n\nPregunta: ${question}\n\nResponde breve y técnico en español. Máximo 3 frases.`;
+            try {
+                addAIMessage(`❓ ${question}`, 'answer');
+                const response = await aiModel.chat.completions.create({ messages: [{ role: 'user', content: prompt }], max_tokens: 200, temperature: 0.4 });
+                const text = response.choices[0].message.content;
+                if (text && text.trim()) addAIMessage(text.trim(), 'answer');
+            } catch (e) { addAIMessage('Error al comunicarse con la IA.', 'answer'); }
+        }
+
+        function init() {
+            const editor = document.getElementById('codeEditor');
+            editor.addEventListener('input', updateAll);
+            editor.addEventListener('scroll', function() { document.getElementById('lineNumbers').scrollTop = this.scrollTop; });
+            renderProjectList();
+            loadActiveProject();
+            updateAll();
+            const activeId = getActiveId(), projects = getProjects();
+            if (!activeId && projects.length > 0) {
+                const first = projects.find(p => p.visibility !== 'private' || !p.encrypted);
+                if (first) selectProject(first.id);
+                else { setActiveId(projects[0].id); selectProject(projects[0].id); }
+            }
+            if (activeId && projects.length > 0) { const p = projects.find(x=>x.id===activeId); if (p) updateVisibilityBadge(p); }
+            logToConsole('info', '🚀 RepoStudio 3D iniciado');
+            logToConsole('info', '🧠 Iniciando carga de IA...');
+            updateAIStatus('Iniciando descarga...');
+            initAI();
+            setTimeout(() => { waitForThree(); setTimeout(() => { updateAIStatus('Descargando modelo...'); finishLoading(); }, 500); }, 800);
+        }
+
+        window.selectProject = selectProject;
+        window.deleteProject = deleteProject;
+        window.createProject = createProject;
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.clearConsole = clearConsole;
+        window.exportProject = exportProject;
+        window.unlockProject = unlockProject;
+        window.closePasswordModal = closePasswordModal;
+        window.askAI = askAI;
+
+        init();
+        console.log('🚀 RepoStudio 3D | Ctrl+S guarda | Ctrl+N nuevo');
+        console.log('🔐 Cifrado AES-GCM para privados | 🧠 IA WebLLM local | 💧 Marca de agua');
+    </script>
+</body>
+</html>
