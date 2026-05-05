@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 3D - Editor de HTML en vivo</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-orange: #d2991d;
+            --glass-bg: rgba(22, 27, 34, 0.85);
+            --glass-border: rgba(48, 54, 61, 0.6);
+            --radius: 12px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Canvas 3D de fondo */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Contenedor principal con glassmorphism */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            pointer-events: auto;
+        }
+
+        /* Header estilo GitHub */
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Botones */
+        .btn {
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .btn:hover {
+            border-color: var(--accent);
+            background: #1c2533;
+        }
+        .btn-primary {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: #000;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: #35a044;
+            border-color: #35a044;
+        }
+        .btn-danger {
+            border-color: #da3633;
+            color: #f85149;
+        }
+        .btn-danger:hover {
+            background: #2d1215;
+            border-color: #f85149;
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            border-radius: 6px;
+        }
+
+        /* Contenido principal - 2 paneles */
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 0;
+            overflow: hidden;
+            padding: 16px;
+            gap: 16px;
+        }
+
+        /* Panel izquierdo - Lista de proyectos */
+        .sidebar {
+            width: 300px;
+            flex-shrink: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .project-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .project-card {
+            padding: 12px 14px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
+        }
+        .project-card:hover {
+            border-color: var(--border);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .project-card.active {
+            border-color: var(--accent);
+            background: rgba(88, 166, 255, 0.08);
+        }
+        .project-card .name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .project-card .meta {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+        .project-card .delete-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            background: none;
+            border: none;
+            color: #f85149;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .project-card:hover .delete-btn {
+            opacity: 1;
+        }
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px 20px;
+            font-size: 0.85rem;
+        }
+        .empty-state .icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        /* Panel derecho - Editor + Preview */
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+        }
+        .panel-box {
+            flex: 1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            min-height: 0;
+        }
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-header .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot.html {
+            background: #e34c26;
+        }
+        .dot.preview {
+            background: var(--accent-green);
+        }
+
+        /* Área de código */
+        .code-editor {
+            flex: 1;
+            width: 100%;
+            border: none;
+            resize: none;
+            background: transparent;
+            color: var(--text);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 0.85rem;
+            padding: 16px;
+            line-height: 1.6;
+            outline: none;
+            tab-size: 2;
+            min-height: 0;
+        }
+        .code-editor::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        /* Vista previa */
+        .preview-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: #fff;
+            min-height: 0;
+        }
+
+        /* Modal para nuevo proyecto */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            width: 420px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+        .modal h2 {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        .modal input,
+        .modal textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .modal input:focus,
+        .modal textarea:focus {
+            border-color: var(--accent);
+        }
+        .modal textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--accent-green);
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            z-index: 200;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+                padding: 8px;
+                gap: 8px;
+            }
+            .sidebar {
+                width: 100%;
+                max-height: 180px;
+                flex-shrink: 0;
+            }
+            .header {
+                padding: 12px 16px;
+            }
+            .header h1 {
+                font-size: 0.95rem;
+            }
+            .btn {
+                padding: 7px 12px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas para Three.js -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- App -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo-icon">⏣</div>
+                <h1>RepoStudio 3D</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openModal()">+ Nuevo proyecto</button>
+            </div>
+        </header>
+
+        <!-- Main -->
+        <div class="main-content">
+            <!-- Sidebar - Lista de proyectos -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <span>📁</span> Proyectos
+                </div>
+                <div class="project-list" id="projectList">
+                    <div class="empty-state">
+                        <span class="icon">📭</span>
+                        <p>Aún no hay proyectos</p>
+                        <p style="font-size:0.75rem;margin-top:4px;">Crea uno para comenzar</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Editor + Preview -->
+            <div class="editor-panel">
+                <div class="panel-box" style="flex:1;">
+                    <div class="panel-header">
+                        <span class="dot html"></span> Editor HTML
+                    </div>
+                    <textarea
+                    class="code-editor"
+                    id="codeEditor"
+                    placeholder="<!-- Pega tu código HTML aquí y míralo en vivo -->"
+                    spellcheck="false"
+                ></textarea>
+            </div>
+            <div class="panel-box" style="flex:1;">
+                <div class="panel-header">
+                    <span class="dot preview"></span> Vista previa en vivo
+                </div>
+                <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Proyecto -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h2>✨ Nuevo proyecto</h2>
+        <input type="text" id="projectName" placeholder="Nombre del proyecto" maxlength="50">
+        <textarea id="projectDesc" placeholder="Descripción (opcional)" rows="3" maxlength="200"></textarea>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="createProject()">Crear proyecto</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Three.js desde CDN -->
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+    }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+
+    // ==================== ESCENA 3D ====================
+    const canvas = document.getElementById('bg-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 18);
+
+    // Luces
+    const ambientLight = new THREE.AmbientLight(0x303050, 2);
+    scene.add(ambientLight);
+    const pointLight1 = new THREE.PointLight(0x58a6ff, 50, 40);
+    pointLight1.position.set(8, 5, 5);
+    scene.add(pointLight1);
+    const pointLight2 = new THREE.PointLight(0x3fb950, 30, 35);
+    pointLight2.position.set(-6, -3, -4);
+    scene.add(pointLight2);
+    const pointLight3 = new THREE.PointLight(0xd2991d, 25, 30);
+    pointLight3.position.set(2, -6, 8);
+    scene.add(pointLight3);
+
+    // Grupo principal de geometrías
+    const mainGroup = new THREE.Group();
+    scene.add(mainGroup);
+
+    // Esfera central (planeta estilo GitHub)
+    const sphereGeo = new THREE.IcosahedronGeometry(2.5, 3);
+    const sphereMat = new THREE.MeshPhysicalMaterial({
+        color: 0x1a2332,
+        metalness: 0.4,
+        roughness: 0.2,
+        clearcoat: 0.3,
+        clearcoatRoughness: 0.4,
+        wireframe: false,
+    });
+    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+    sphere.position.set(0, 0, 0);
+    mainGroup.add(sphere);
+
+    // Wireframe encima
+    const wireGeo = new THREE.IcosahedronGeometry(2.65, 3);
+    const wireMat = new THREE.MeshBasicMaterial({
+        color: 0x58a6ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.15,
+    });
+    const wireSphere = new THREE.Mesh(wireGeo, wireMat);
+    mainGroup.add(wireSphere);
+
+    // Anillo orbital
+    const ringGeo = new THREE.TorusGeometry(3.8, 0.03, 16, 120);
+    const ringMat = new THREE.MeshStandardMaterial({
+        color: 0x58a6ff,
+        emissive: 0x58a6ff,
+        emissiveIntensity: 0.6,
+        roughness: 0.3,
+        metalness: 0.8,
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 3;
+    ring.rotation.y = Math.PI / 6;
+    mainGroup.add(ring);
+
+    // Segundo anillo
+    const ring2Geo = new THREE.TorusGeometry(4.3, 0.025, 16, 100);
+    const ring2Mat = new THREE.MeshStandardMaterial({
+        color: 0x3fb950,
+        emissive: 0x3fb950,
+        emissiveIntensity: 0.4,
+        roughness: 0.3,
+        metalness: 0.7,
+    });
+    const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+    ring2.rotation.x = -Math.PI / 4;
+    ring2.rotation.y = -Math.PI / 5;
+    mainGroup.add(ring2);
+
+    // Partículas flotantes
+    const particlesCount = 400;
+    const particlesGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(particlesCount * 3);
+    const colors = new Float32Array(particlesCount * 3);
+    const palette = [
+        new THREE.Color(0x58a6ff),
+        new THREE.Color(0x3fb950),
+        new THREE.Color(0xd2991d),
+        new THREE.Color(0xf85149),
+        new THREE.Color(0xbc8cff),
+    ];
+
+    for (let i = 0; i < particlesCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI * 2;
+        const radius = 5 + Math.random() * 12;
+        positions[i * 3] = Math.cos(theta) * Math.sin(phi) * radius;
+        positions[i * 3 + 1] = Math.sin(theta) * Math.sin(phi) * radius;
+        positions[i * 3 + 2] = Math.cos(phi) * radius;
+        const col = palette[Math.floor(Math.random() * palette.length)];
+        colors[i * 3] = col.r;
+        colors[i * 3 + 1] = col.g;
+        colors[i * 3 + 2] = col.b;
+    }
+    particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particlesGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const particlesMat = new THREE.PointsMaterial({
+        size: 0.04,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0.7,
+    });
+    const particles = new THREE.Points(particlesGeo, particlesMat);
+    particles.name = 'particles';
+    scene.add(particles);
+
+    // Cubos flotantes pequeños
+    const cubesGroup = new THREE.Group();
+    for (let i = 0; i < 20; i++) {
+        const size = 0.1 + Math.random() * 0.3;
+        const cubeGeo = new THREE.BoxGeometry(size, size, size);
+        const cubeMat = new THREE.MeshStandardMaterial({
+            color: palette[Math.floor(Math.random() * palette.length)],
+            roughness: 0.3,
+            metalness: 0.6,
+            emissive: palette[Math.floor(Math.random() * palette.length)],
+            emissiveIntensity: 0.3,
+        });
+        const cube = new THREE.Mesh(cubeGeo, cubeMat);
+        cube.position.set(
+            (Math.random() - 0.5) * 14,
+            (Math.random() - 0.5) * 14,
+            (Math.random() - 0.5) * 10
+        );
+        cube.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+        cube.userData = {
+            speed: 0.002 + Math.random() * 0.008,
+            axis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5)
+                .normalize(),
+            floatSpeed: 0.3 + Math.random() * 0.7,
+            floatAmp: 0.5 + Math.random() * 2,
+            initialY: cube.position.y,
+        };
+        cubesGroup.add(cube);
+    }
+    scene.add(cubesGroup);
+
+    // Mouse tracking para parallax suave
+    const mouse = { x: 0, y: 0 };
+    const targetMouse = { x: 0, y: 0 };
+    window.addEventListener('mousemove', (e) => {
+        targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    // Resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Animación
+    const clock = new THREE.Clock();
+    function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.1);
+        const t = performance.now() * 0.001;
+
+        // Suavizado del mouse
+        mouse.x += (targetMouse.x - mouse.x) * 0.03;
+        mouse.y += (targetMouse.y - mouse.y) * 0.03;
+
+        // Rotación del grupo principal con influencia del mouse
+        mainGroup.rotation.y += dt * 0.15;
+        mainGroup.rotation.x += dt * 0.05;
+        mainGroup.position.x += (mouse.x * 1.5 - mainGroup.position.x) * 0.02;
+        mainGroup.position.y += (mouse.y * 0.8 - mainGroup.position.y) * 0.02;
+
+        // Anillos contra-rotan
+        ring.rotation.z += dt * 0.25;
+        ring2.rotation.z -= dt * 0.2;
+
+        // Partículas
+        particles.rotation.y += dt * 0.04;
+        particles.rotation.x += dt * 0.02;
+
+        // Cubos
+        cubesGroup.children.forEach((cube) => {
+            cube.rotateOnWorldAxis(cube.userData.axis, cube.userData.speed);
+            cube.position.y =
+                cube.userData.initialY + Math.sin(t * cube.userData.floatSpeed) * cube.userData.floatAmp;
+        });
+
+        // Luces dinámicas
+        pointLight1.intensity = 45 + Math.sin(t * 0.8) * 8;
+        pointLight2.intensity = 28 + Math.cos(t * 1.1) * 6;
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // Exponer para consola
+    window._three = { scene, camera, renderer, mainGroup, particles, cubesGroup };
+    console.log('🎨 Escena 3D lista. Explora window._three');
+</script>
+
+<!-- Lógica de la aplicación -->
+<script>
+    // ==================== GESTIÓN DE PROYECTOS ====================
+    const STORAGE_KEY = 'repostudio3d_projects';
+    const ACTIVE_KEY = 'repostudio3d_active';
+
+    function getProjects() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveProjects(projects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    }
+
+    function getActiveId() {
+        return localStorage.getItem(ACTIVE_KEY) || null;
+    }
+
+    function setActiveId(id) {
+        localStorage.setItem(ACTIVE_KEY, id);
+    }
+
+    function generateId() {
+        return 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    }
+
+    // ==================== UI ====================
+    const projectList = document.getElementById('projectList');
+    const codeEditor = document.getElementById('codeEditor');
+    const previewFrame = document.getElementById('previewFrame');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const toast = document.getElementById('toast');
+
+    let updateTimer;
+
+    function showToast(msg, duration = 2000) {
+        toast.textContent = msg;
+        toast.classList.add('show');
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    function updatePreview() {
+        clearTimeout(updateTimer);
+        updateTimer = setTimeout(() => {
+            const code = codeEditor.value;
+            const blob = new Blob([code], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            previewFrame.src = url;
+            // Limpiar URL anterior después de cargar
+            previewFrame.onload = () => {
+                URL.revokeObjectURL(url);
+            };
+        }, 300);
+    }
+
+    function renderProjectList() {
+        const projects = getProjects();
+        const activeId = getActiveId();
+
+        if (projects.length === 0) {
+            projectList.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">📭</span>
+                        <p>Aún no hay proyectos</p>
+                        <p style="font-size:0.75rem;margin-top:4px;">Crea uno para comenzar</p>
+                    </div>`;
+            codeEditor.value = '';
+            updatePreview();
+            return;
+        }
+
+        projectList.innerHTML = projects
+            .map(
+                (p) => `
+                <div class="project-card ${p.id === activeId ? 'active' : ''}" onclick="selectProject('${p.id}')">
+                    <div class="name">📄 ${escapeHtml(p.name)}</div>
+                    <div class="meta">${escapeHtml(p.desc || 'Sin descripción')} · ${timeAgo(p.updatedAt)}</div>
+                    <button class="delete-btn" onclick="event.stopPropagation();deleteProject('${p.id}')" title="Eliminar">🗑</button>
+                </div>`
+            )
+            .join('');
+    }
+
+    function selectProject(id) {
+        const projects = getProjects();
+        const project = projects.find((p) => p.id === id);
+        if (!project) return;
+
+        setActiveId(id);
+        codeEditor.value = project.code || '';
+        updatePreview();
+        renderProjectList();
+    }
+
+    function loadActiveProject() {
+        const activeId = getActiveId();
+        if (!activeId) return;
+        const projects = getProjects();
+        const project = projects.find((p) => p.id === activeId);
+        if (project) {
+            codeEditor.value = project.code || '';
+        } else {
+            codeEditor.value = '';
+        }
+        updatePreview();
+    }
+
+    function saveCurrentProject() {
+        const activeId = getActiveId();
+        if (!activeId) return;
+        const projects = getProjects();
+        const idx = projects.findIndex((p) => p.id === activeId);
+        if (idx === -1) return;
+
+        projects[idx].code = codeEditor.value;
+        projects[idx].updatedAt = Date.now();
+        saveProjects(projects);
+    }
+
+    function createProject() {
+        const nameInput = document.getElementById('projectName');
+        const descInput = document.getElementById('projectDesc');
+        const name = nameInput.value.trim();
+
+        if (!name) {
+            showToast('⚠️ El nombre es obligatorio');
+            nameInput.focus();
+            return;
+        }
+
+        const newProject = {
+            id: generateId(),
+            name: name,
+            desc: descInput.value.trim(),
+            code: '',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        };
+
+        const projects = getProjects();
+        projects.unshift(newProject);
+        saveProjects(projects);
+        setActiveId(newProject.id);
+
+        nameInput.value = '';
+        descInput.value = '';
+        closeModal();
+        renderProjectList();
+        selectProject(newProject.id);
+        loadActiveProject();
+        showToast('✅ Proyecto creado');
+    }
+
+    function deleteProject(id) {
+        if (!confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return;
+
+        let projects = getProjects();
+        projects = projects.filter((p) => p.id !== id);
+        saveProjects(projects);
+
+        const activeId = getActiveId();
+        if (activeId === id) {
+            if (projects.length > 0) {
+                setActiveId(projects[0].id);
+                selectProject(projects[0].id);
+            } else {
+                localStorage.removeItem(ACTIVE_KEY);
+                codeEditor.value = '';
+                updatePreview();
+            }
+        }
+
+        renderProjectList();
+        loadActiveProject();
+        showToast('🗑 Proyecto eliminado');
+    }
+
+    function openModal() {
+        modalOverlay.classList.add('show');
+        document.getElementById('projectName').focus();
+    }
+
+    function closeModal() {
+        modalOverlay.classList.remove('show');
+        document.getElementById('projectName').value = '';
+        document.getElementById('projectDesc').value = '';
+    }
+
+    // Cerrar modal con Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    // Click fuera del modal
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeModal();
+    });
+
+    // Autoguardado mientras se escribe
+    codeEditor.addEventListener('input', () => {
+        updatePreview();
+        saveCurrentProject();
+    });
+
+    // Atajos de teclado
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveCurrentProject();
+            showToast('💾 Guardado');
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            openModal();
+        }
+    });
+
+    // ==================== UTILIDADES ====================
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function timeAgo(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (days > 0) return `hace ${days}d`;
+        if (hours > 0) return `hace ${hours}h`;
+        if (minutes > 0) return `hace ${minutes}m`;
+        return 'ahora';
+    }
+
+    // Exponer funciones globalmente
+    window.selectProject = selectProject;
+    window.deleteProject = deleteProject;
+    window.createProject = createProject;
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+
+    // ==================== INICIALIZACIÓN ====================
+    function init() {
+        renderProjectList();
+        loadActiveProject();
+
+        // Si no hay proyecto activo pero hay proyectos, seleccionar el primero
+        const activeId = getActiveId();
+        const projects = getProjects();
+        if (!activeId && projects.length > 0) {
+            setActiveId(projects[0].id);
+            selectProject(projects[0].id);
+            loadActiveProject();
+        }
+
+        console.log('🚀 RepoStudio 3D listo');
+        console.log('   📁 Proyectos:', getProjects().length);
+        console.log('   ⌨️  Ctrl+S = Guardar | Ctrl+N = Nuevo proyecto');
+    }
+
+    init();
+</script>
+</body>
+</html>
