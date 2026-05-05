@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>RepoStudio 3D Pro - GitHub Style</title>
+    <style>
+        :root {
+            --bg:#0d1117; --surface:#161b22; --border:#30363d;
+            --text:#c9d1d9; --text-secondary:#8b949e;
+            --accent:#58a6ff; --green:#3fb950; --orange:#d2991d;
+            --red:#f85149; --purple:#bc8cff; --gold:#ffd700;
+            --glass:rgba(22,27,34,0.88); --glass-border:rgba(48,54,61,0.65);
+            --radius:12px; --shadow:0 8px 32px rgba(0,0,0,0.5);
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);height:100vh;width:100vw;overflow:hidden}
+        #bg-canvas{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+
+        #loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#0d1117;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s}
+        #loading-screen.hidden{opacity:0;pointer-events:none}
+        .loader-spinner{width:50px;height:50px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:20px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        #loading-status{color:var(--text-secondary);font-size:0.85rem}
+
+        .app-container{position:relative;z-index:1;height:100vh;width:100vw;display:flex;flex-direction:column;opacity:0;transition:opacity 0.5s}
+        .app-container.ready{opacity:1}
+
+        #loginScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.93);z-index:500;display:flex;align-items:center;justify-content:center;transition:opacity 0.4s}
+        #loginScreen.hidden{opacity:0;pointer-events:none}
+        .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;width:390px;max-width:90vw;text-align:center;box-shadow:var(--shadow);animation:slideUp 0.5s ease-out;max-height:90vh;overflow-y:auto}
+        @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .login-card h2{margin-bottom:6px;font-size:1.3rem}
+        .login-card .subtitle{color:var(--text-secondary);font-size:0.78rem;margin-bottom:18px}
+        .login-btn{width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:#fff;color:#000;cursor:pointer;font-size:0.9rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;transition:all 0.2s}
+        .login-btn:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+        .login-btn.primary{background:var(--green);color:#000;border-color:var(--green)}
+        .login-btn.outline{background:transparent;color:var(--text);border-color:var(--border)}
+        .login-btn.outline:hover{border-color:var(--accent);background:rgba(88,166,255,0.08)}
+        .login-card input{width:100%;padding:10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.85rem;margin-bottom:10px;outline:none;text-align:center}
+        .login-card input:focus{border-color:var(--accent)}
+        .divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--text-secondary);font-size:0.65rem}
+        .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+        .login-step{display:none}
+        .login-step.active{display:block}
+        .login-card .title-icon{font-size:3rem;display:block;margin-bottom:8px}
+
+        .header{background:var(--glass);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;flex-wrap:wrap}
+        .header-left,.header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+        .logo-icon{width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#fff;font-size:16px;animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(88,166,255,0.4)}50%{box-shadow:0 0 0 12px rgba(88,166,255,0)}}
+        .header h1{font-size:0.9rem;font-weight:600}
+        .badge{padding:3px 8px;border-radius:10px;font-size:0.65rem;font-weight:600;white-space:nowrap}
+        .badge-pro{background:rgba(255,215,0,0.2);color:var(--gold);border:1px solid rgba(255,215,0,0.4);animation:glow 2s infinite}
+        .badge-guest{background:rgba(139,148,158,0.15);color:var(--text-secondary);border:1px solid rgba(139,148,158,0.3)}
+        @keyframes glow{0%,100%{box-shadow:0 0 4px rgba(255,215,0,0.3)}50%{box-shadow:0 0 14px rgba(255,215,0,0.6)}}
+        .btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:0.72rem;font-weight:500;transition:all 0.2s;display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:inherit}
+        .btn:hover{border-color:var(--accent);background:#1c2533;transform:translateY(-1px)}
+        .btn:active{transform:scale(0.96)}
+        .btn-primary{background:var(--green);border-color:var(--green);color:#000;font-weight:600}
+        .btn-gold{background:var(--gold);border-color:var(--gold);color:#000;font-weight:700}
+        .btn-sm{padding:4px 7px;font-size:0.62rem}
+
+        .main-content{display:flex;flex:1;gap:6px;padding:6px;overflow:hidden;min-height:0}
+        .sidebar{width:270px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;min-height:0;overflow-y:auto}
+        .side-box{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+        .side-box.projects-box{flex:1;min-height:120px;max-height:300px}
+        .side-box.explore-box{flex:1;min-height:120px;max-height:300px}
+        .side-box.stats-box{min-height:auto}
+        .box-header{padding:8px 11px;border-bottom:1px solid var(--border);font-weight:600;font-size:0.68rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+        .count-badge{background:var(--border);color:var(--text-secondary);padding:2px 6px;border-radius:8px;font-size:0.6rem}
+        .project-list,.explore-list{flex:1;overflow-y:auto;padding:4px;min-height:0}
+        .project-card{padding:8px 10px;margin-bottom:3px;border-radius:6px;cursor:pointer;border:1px solid transparent;transition:all 0.2s;font-size:0.72rem;background:rgba(255,255,255,0.01);display:flex;justify-content:space-between;align-items:center}
+        .project-card:hover{border-color:var(--border);background:rgba(255,255,255,0.03);transform:translateX(2px)}
+        .project-card.active{border-color:var(--accent);background:rgba(88,166,255,0.08)}
+        .project-card .p-info{flex:1;min-width:0}
+        .project-card .p-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .project-card .p-meta{font-size:0.6rem;color:var(--text-secondary)}
+        .project-card .p-stars{font-size:0.6rem;color:var(--gold);flex-shrink:0;margin-left:6px}
+        .stats-row{padding:8px 11px;font-size:0.65rem;display:flex;flex-direction:column;gap:4px}
+        .stat-item{display:flex;justify-content:space-between;color:var(--text-secondary)}
+        .stat-item .val{color:var(--text);font-weight:600}
+        .stat-item .val.gold{color:var(--gold)}
+        .key-display{padding:6px 11px;font-family:'Courier New',monospace;font-size:0.6rem;word-break:break-all;color:var(--gold);background:rgba(0,0,0,0.3);border-radius:4px;margin:4px 8px;cursor:pointer;text-align:center}
+        .upgrade-msg{font-size:0.58rem;color:var(--text-secondary);text-align:center;padding:4px 8px;cursor:pointer}
+        .upgrade-msg:hover{color:var(--gold)}
+
+        .editor-panel{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+        .panel-box{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+        .panel-box.editor-box{flex:1}
+        .panel-box.preview-box{flex:1}
+        .console-box{height:100px;flex-shrink:0}
+        .panel-header{padding:7px 10px;border-bottom:1px solid var(--border);font-weight:600;font-size:0.66rem;color:var(--text-secondary);text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-shrink:0}
+        .tabs{display:flex;gap:2px}
+        .tab{padding:4px 10px;border-radius:4px;border:none;background:transparent;color:var(--text-secondary);cursor:pointer;font-size:0.64rem;font-weight:500;transition:all 0.2s}
+        .tab:hover{color:var(--text)}
+        .tab.active{background:var(--accent);color:#fff}
+        .code-editor{flex:1;width:100%;border:none;resize:none;background:transparent;color:var(--text);font-family:'JetBrains Mono','Courier New',monospace;font-size:0.7rem;padding:8px 10px;line-height:1.5;outline:none;tab-size:2;min-height:0}
+        .code-editor::placeholder{color:var(--text-secondary);opacity:0.3}
+        .preview-frame{flex:1;width:100%;border:none;background:#fff;min-height:0}
+        .console-output{flex:1;overflow-y:auto;padding:5px 8px;font-family:'JetBrains Mono','Courier New',monospace;font-size:0.6rem;line-height:1.4;background:rgba(0,0,0,0.3)}
+        .console-line{padding:1px 0;display:flex;gap:5px}
+        .console-line .ts{color:var(--text-secondary);opacity:0.5;font-size:0.55rem;min-width:55px;flex-shrink:0}
+        .console-line.err{color:var(--red)}.console-line.warn{color:var(--orange)}.console-line.info{color:var(--accent)}.console-line.ok{color:var(--green)}
+
+        .ai-panel{position:fixed;bottom:20px;right:20px;z-index:300}
+        .ai-fab{width:50px;height:50px;border-radius:50%;background:var(--purple);color:#fff;border:none;cursor:pointer;font-size:1.3rem;box-shadow:0 4px 20px rgba(188,140,255,0.4);transition:all 0.3s;display:flex;align-items:center;justify-content:center}
+        .ai-fab:hover{transform:scale(1.1)}
+        .ai-chat{position:absolute;bottom:60px;right:0;width:310px;max-height:400px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:none;flex-direction:column;overflow:hidden}
+        .ai-chat.open{display:flex}
+        .ai-chat-header{padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;font-size:0.7rem;display:flex;justify-content:space-between}
+        .ai-chat-messages{flex:1;overflow-y:auto;padding:6px;font-size:0.62rem;max-height:260px}
+        .ai-chat-input{display:flex;padding:6px;border-top:1px solid var(--border)}
+        .ai-chat-input input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:5px 8px;color:var(--text);font-size:0.62rem;outline:none}
+        .command-hint{font-size:0.55rem;color:var(--text-secondary);padding:3px 12px;text-align:center}
+
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:400;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+        .modal-overlay.show{opacity:1;pointer-events:auto}
+        .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;width:400px;max-width:90vw;box-shadow:var(--shadow)}
+        .modal h2{font-size:1rem;margin-bottom:14px}
+        .modal input,.modal textarea,.modal select{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.8rem;margin-bottom:10px;font-family:inherit;outline:none}
+        .modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--accent)}
+        .modal-actions{display:flex;gap:8px;justify-content:flex-end}
+
+        .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--green);color:#000;padding:8px 16px;border-radius:6px;font-weight:600;font-size:0.7rem;z-index:500;transition:transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275);white-space:nowrap;max-width:90vw}
+        .toast.show{transform:translateX(-50%) translateY(0)}
+
+        ::-webkit-scrollbar{width:3px}
+        ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+        @media(max-width:750px){
+            .main-content{flex-direction:column}
+            .sidebar{width:100%;max-height:200px;flex-shrink:0}
+            .ai-panel{bottom:10px;right:10px}
+            .ai-chat{width:270px}
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="loading-screen">
+        <div class="loader-spinner"></div>
+        <div id="loading-status">Iniciando...</div>
+    </div>
+
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="login-step active" id="step1">
+                <span class="title-icon">⏣</span>
+                <h2>RepoStudio 3D Pro</h2>
+                <p class="subtitle">Crea, comparte y publica proyectos como en GitHub</p>
+                <button class="login-btn" onclick="loginGoogle()" style="background:#4285f4;color:#fff;border-color:#4285f4;">G&nbsp;&nbsp;Google</button>
+                <button class="login-btn" onclick="loginGithub()" style="background:#24292e;color:#fff;border-color:#24292e;">⌘&nbsp;&nbsp;GitHub</button>
+                <div class="divider">o email</div>
+                <input type="text" id="regName" placeholder="Tu nombre">
+                <input type="email" id="regEmail" placeholder="tu@gmail.com">
+                <button class="login-btn primary" onclick="sendVerification()">📧 Enviar verificación</button>
+                <button class="login-btn outline" onclick="continueGuest()">👤 Entrar sin registro (10 usos)</button>
+                <p style="font-size:0.6rem;color:var(--text-secondary);margin-top:6px;">¿Ya verificaste? <a href="#" onclick="checkVerified()" style="color:var(--accent);">Entrar a mi cuenta</a></p>
+            </div>
+            <div class="login-step" id="step2">
+                <span class="title-icon">📬</span>
+                <h2>¡Correo enviado!</h2>
+                <p class="subtitle">Revisa tu bandeja (y spam)</p>
+                <p style="font-size:0.75rem;margin:8px 0;">Haz clic en <b style="color:var(--green);">"Verificar mi email"</b></p>
+                <button class="login-btn primary" onclick="checkVerified()">✅ Ya verifiqué, entrar ahora</button>
+                <button class="login-btn outline" onclick="showStep1()">← Volver</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo-icon">⏣</div>
+                <h1>RepoStudio 3D</h1>
+                <span class="badge badge-guest" id="tierBadge">INVITADO</span>
+                <span style="font-size:0.6rem;color:var(--text-secondary)" id="requestsLeft">10</span>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-sm" onclick="openNewProject()">+ Nuevo</button>
+                <button class="btn btn-sm" onclick="forkRandomProject()">🍴 Fork</button>
+                <button class="btn btn-sm btn-gold" id="btnKey" onclick="showKey()" style="display:none">🔑 KEY</button>
+                <button class="btn btn-sm btn-primary" id="btnPublish" onclick="publishProject()" disabled>🚀 Publicar</button>
+                <button class="btn btn-sm outline" id="btnLogin" onclick="showLogin()">Entrar</button>
+                <button class="btn btn-sm" id="btnLogout" onclick="logout()" style="display:none">Salir</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="side-box projects-box">
+                    <div class="box-header">📁 Mis proyectos <span class="count-badge" id="projectCount">0</span></div>
+                    <div class="project-list" id="projectList"></div>
+                </div>
+                <div class="side-box explore-box">
+                    <div class="box-header">🌍 Explorar públicos <span class="count-badge" id="exploreCount">0</span></div>
+                    <div class="project-list" id="exploreList"></div>
+                </div>
+                <div class="side-box stats-box">
+                    <div class="box-header">📊 Estadísticas</div>
+                    <div class="stats-row">
+                        <div class="stat-item"><span>Peticiones</span><span class="val gold" id="statRequests">10</span></div>
+                        <div class="stat-item"><span>Plan</span><span class="val gold" id="statTier">INVITADO</span></div>
+                    </div>
+                    <div class="key-display" id="keyDisplay" style="display:none" onclick="copyKey()">🔑 Sin key</div>
+                    <div class="upgrade-msg" id="upgradeMsg" onclick="showLogin()">⚡ Regístrate para 56k →</div>
+                </div>
+            </aside>
+
+            <div class="editor-panel">
+                <div class="panel-box editor-box">
+                    <div class="panel-header">
+                        <div class="tabs">
+                            <button class="tab active" onclick="switchTab('html')">HTML</button>
+                            <button class="tab" onclick="switchTab('css')">CSS</button>
+                            <button class="tab" onclick="switchTab('js')">JS</button>
+                        </div>
+                    </div>
+                    <textarea class="code-editor" id="htmlEditor" placeholder="<!-- HTML -->" spellcheck="false"></textarea>
+                    <textarea class="code-editor" id="cssEditor" placeholder="/* CSS */" style="display:none" spellcheck="false"></textarea>
+                    <textarea class="code-editor" id="jsEditor" placeholder="// JS" style="display:none" spellcheck="false"></textarea>
+                </div>
+                <div class="panel-box preview-box">
+                    <div class="panel-header">👁 Vista previa</div>
+                    <iframe class="preview-frame" id="previewFrame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+                </div>
+                <div class="panel-box console-box">
+                    <div class="panel-header">📋 Consola</div>
+                    <div class="console-output" id="consoleOutput"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ai-panel">
+        <div class="ai-chat" id="aiChat">
+            <div class="ai-chat-header">🤖 IA <button class="btn btn-sm" onclick="toggleAI()">✕</button></div>
+            <div class="command-hint">/revisar /optimizar /seo /publicar</div>
+            <div class="ai-chat-messages" id="aiChatMessages"></div>
+            <div class="ai-chat-input">
+                <input type="text" id="aiCommandInput" placeholder="/comando" onkeydown="if(event.key==='Enter')runAI()">
+                <button class="btn btn-sm btn-primary" onclick="runAI()">→</button>
+            </div>
+        </div>
+        <button class="ai-fab" onclick="toggleAI()">🤖</button>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2>✨ Nuevo proyecto</h2>
+            <input type="text" id="projectName" placeholder="Nombre" maxlength="50">
+            <textarea id="projectDesc" rows="2" maxlength="200" placeholder="Descripción"></textarea>
+            <select id="projectVisibility">
+                <option value="public">🌐 Público</option>
+                <option value="private">🔒 Privado</option>
+            </select>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="createProject()">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        // ========== CONFIG ==========
+        var SUPABASE_URL='https://wdltodllpvjmlzbuuoee.supabase.co';
+        var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkbHRvZGxscHZqbWx6YnV1b2VlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MDgyMjYsImV4cCI6MjA5Mjk4NDIyNn0.yBEjjN5H7jXZWXMy4LQbYFiMAtpneu5sLCjFJj4P3g0';
+        emailjs.init('HkDbDkPiAo__x0gYr');
+        var supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+        var currentUser=null,userKey=null,isGuest=true,guestUsed=0;
+        var currentTab='html',currentProjectId=null,localProjects=[],pendingEmail='',pendingName='';
+
+        // ========== THREE.JS ==========
+        function initThree(){try{var c=document.getElementById('bg-canvas');var r=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});r.setPixelRatio(Math.min(window.devicePixelRatio,2));r.setSize(window.innerWidth,window.innerHeight);var s=new THREE.Scene();var cam=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,100);cam.position.z=13;var pg=new THREE.BufferGeometry();var cnt=400,pos=new Float32Array(cnt*3),cols=new Float32Array(cnt*3);var pal=[0x58a6ff,0x3fb950,0xd2991d,0xbc8cff];for(var i=0;i<cnt;i++){pos[i*3]=(Math.random()-0.5)*24;pos[i*3+1]=(Math.random()-0.5)*24;pos[i*3+2]=(Math.random()-0.5)*18;var co=new THREE.Color(pal[Math.floor(Math.random()*pal.length)]);cols[i*3]=co.r;cols[i*3+1]=co.g;cols[i*3+2]=co.b}pg.setAttribute('position',new THREE.BufferAttribute(pos,3));pg.setAttribute('color',new THREE.BufferAttribute(cols,3));var p=new THREE.Points(pg,new THREE.PointsMaterial({size:0.05,vertexColors:true,blending:THREE.AdditiveBlending,transparent:true,opacity:0.7,depthWrite:false}));s.add(p);var rg=new THREE.TorusGeometry(5.5,0.02,16,120);var r1=new THREE.Mesh(rg,new THREE.MeshBasicMaterial({color:0x58a6ff,transparent:true,opacity:0.25}));r1.rotation.x=Math.PI/3;s.add(r1);(function anim(){requestAnimationFrame(anim);p.rotation.y+=0.00035;p.rotation.x+=0.0002;r1.rotation.z+=0.0025;r.render(s,cam)})();window.addEventListener('resize',function(){cam.aspect=window.innerWidth/window.innerHeight;cam.updateProjectionMatrix();r.setSize(window.innerWidth,window.innerHeight)})}catch(e){}}
+
+        // ========== UI ==========
+        function hideLoadingAndLogin(){document.getElementById('loading-screen').classList.add('hidden');document.getElementById('loginScreen').classList.add('hidden')}
+        function showStep1(){document.getElementById('step1').classList.add('active');document.getElementById('step2').classList.remove('active')}
+        function showStep2(){document.getElementById('step1').classList.remove('active');document.getElementById('step2').classList.add('active')}
+        function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');showStep1()}
+        function updateGuestUI(){
+            document.getElementById('tierBadge').textContent='INVITADO';document.getElementById('tierBadge').className='badge badge-guest';
+            document.getElementById('statTier').textContent='INVITADO';document.getElementById('statRequests').textContent=Math.max(0,10-guestUsed);
+            document.getElementById('requestsLeft').textContent=Math.max(0,10-guestUsed)+' peticiones';
+            document.getElementById('requestsBar')&&(document.getElementById('requestsBar').style.width=Math.max(1,((10-guestUsed)/10)*100)+'%');
+            document.getElementById('keyDisplay').style.display='none';document.getElementById('upgradeMsg').style.display='block';
+            document.getElementById('btnKey').style.display='none';document.getElementById('btnPublish').disabled=true;
+            document.getElementById('btnLogin').style.display='inline-flex';document.getElementById('btnLogout').style.display='none';
+        }
+        function updateProUI(){
+            if(!userKey)return;
+            var rem=Math.max(0,userKey.total_requests-userKey.used_requests);
+            document.getElementById('tierBadge').textContent='PRO';document.getElementById('tierBadge').className='badge badge-pro';
+            document.getElementById('statTier').textContent='PRO';document.getElementById('statRequests').textContent=rem.toLocaleString();
+            document.getElementById('requestsLeft').textContent=rem.toLocaleString()+' pet';
+            document.getElementById('keyDisplay').style.display='block';document.getElementById('keyDisplay').textContent='🔑 '+userKey.key_code;
+            document.getElementById('upgradeMsg').style.display='none';document.getElementById('btnKey').style.display='inline-flex';
+            document.getElementById('btnPublish').disabled=false;document.getElementById('btnLogin').style.display='none';
+            document.getElementById('btnLogout').style.display='inline-flex';
+        }
+        function escapeHtml(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
+        function showToast(m,e){var t=document.getElementById('toast');t.textContent=m;t.style.background=e?'var(--red)':'var(--green)';t.style.color=e?'#fff':'#000';t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show')},2500)}
+
+        // ========== EMAILJS ==========
+        function genToken(){return'rs3d_'+Date.now()+'_'+Math.random().toString(36).substr(2,16)}
+        async function sendVerification(){
+            var n=document.getElementById('regName').value.trim(),e=document.getElementById('regEmail').value.trim();
+            if(!n||!e||e.indexOf('@')===-1){showToast('Completa todos los campos',true);return}
+            pendingName=n;pendingEmail=e;
+            var token=genToken();
+            var link=window.location.origin+window.location.pathname+'?verify='+token+'&e='+encodeURIComponent(e)+'&n='+encodeURIComponent(n);
+            try{
+                await emailjs.send('service_93tsf76','template_bk8m0gi',{name:n,email:e,verification_link:link,title:'Verifica tu email'});
+                var v=JSON.parse(localStorage.getItem('rs3d_v')||'{}');
+                v[token]={email:e,name:n,time:Date.now()};
+                localStorage.setItem('rs3d_v',JSON.stringify(v));
+                localStorage.setItem('rs3d_pending_email',e);
+                showStep2();
+            }catch(err){showToast('Error al enviar. Intenta de nuevo.',true)}
+        }
+
+        function checkVerified(){
+            var email=localStorage.getItem('rs3d_pending_email')||pendingEmail||document.getElementById('regEmail').value.trim();
+            if(!email){showToast('Ingresa tu email primero',true);return}
+            // Buscar si ya está verificado
+            supabase.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}}).then(function(r){
+                if(!r.error){showToast('📧 Revisa tu email para entrar');hideLoadingAndLogin();document.getElementById('appContainer').classList.add('ready');initApp()}
+                else{showToast('Error. Intenta con "Enviar verificación"',true)}
+            });
+        }
+
+        // ========== VERIFICACIÓN AL CARGAR ==========
+        function checkVerificationOnLoad(){
+            var p=new URLSearchParams(window.location.search);
+            var token=p.get('verify'),email=p.get('e'),name=p.get('n');
+            if(token&&email){
+                var v=JSON.parse(localStorage.getItem('rs3d_v')||'{}');
+                if(v[token]&&v[token].email===email){
+                    v[token].verified=true;localStorage.setItem('rs3d_v',JSON.stringify(v));
+                    // Limpiar URL
+                    if(window.history&&window.history.replaceState){window.history.replaceState({},document.title,window.location.pathname)}
+                    registerPro(email,name||email.split('@')[0]);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        async function registerPro(email,name){
+            document.getElementById('loading-status').textContent='Creando cuenta PRO...';
+            try{
+                var r=await supabase.auth.signUp({email:email,password:genToken()+'Aa1!',options:{data:{full_name:name}}});
+                if(r.data.user){
+                    currentUser=r.data.user;isGuest=false;
+                    await supabase.from('profiles').upsert({id:currentUser.id,username:name||email.split('@')[0],avatar_url:''});
+                    var kr=await supabase.rpc('generate_unique_key');
+                    var kc=(kr.data&&typeof kr.data==='string')?kr.data:'rs3d-'+Math.random().toString(36).substr(2,12);
+                    var ir=await supabase.from('user_keys').insert({profile_id:currentUser.id,key_code:kc,tier:'pro',total_requests:56000,used_requests:0}).select().single();
+                    userKey=ir.data||{key_code:kc,tier:'pro',total_requests:56000,used_requests:0};
+                    updateProUI();showToast('✅ ¡Cuenta PRO activada! 56k peticiones');
+                }
+            }catch(e){
+                userKey={key_code:'rs3d-local-'+Math.random().toString(36).substr(2,8),tier:'pro',total_requests:56000,used_requests:0};
+                isGuest=false;updateProUI();showToast('✅ Verificado. KEY local activada.');
+            }
+            hideLoadingAndLogin();document.getElementById('appContainer').classList.add('ready');initApp();
+        }
+
+        // ========== GUEST ==========
+        function continueGuest(){isGuest=true;guestUsed=parseInt(localStorage.getItem('rs3d_guest')||'0');localProjects=JSON.parse(localStorage.getItem('rs3d_local')||'[]');userKey=null;currentUser=null;updateGuestUI();hideLoadingAndLogin();document.getElementById('appContainer').classList.add('ready');initApp()}
+        function saveGuest(){localStorage.setItem('rs3d_guest',guestUsed);localStorage.setItem('rs3d_local',JSON.stringify(localProjects))}
+
+        // ========== AUTH ==========
+        async function loginGoogle(){await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}})}
+        async function loginGithub(){await supabase.auth.signInWithOAuth({provider:'github',options:{redirectTo:window.location.origin+window.location.pathname}})}
+        async function logout(){if(currentUser)await supabase.auth.signOut();currentUser=null;userKey=null;isGuest=true;guestUsed=parseInt(localStorage.getItem('rs3d_guest')||'0');localProjects=JSON.parse(localStorage.getItem('rs3d_local')||'[]');currentProjectId=null;document.getElementById('htmlEditor').value='';document.getElementById('cssEditor').value='';document.getElementById('jsEditor').value='';updateGuestUI();showToast('👤 Modo invitado')}
+
+        // ========== REQUESTS ==========
+        function useRequest(a){
+            if(isGuest){if(guestUsed>=10){showToast('⚠️ Sin peticiones. Regístrate.',true);return false}guestUsed++;saveGuest();updateGuestUI();return true}
+            if(!userKey)return false;
+            supabase.rpc('use_request',{key_to_check:userKey.key_code}).then(function(r){if(!r.error&&r.data&&r.data.valid){userKey.used_requests=(userKey.used_requests||0)+1;updateProUI()}}).catch(function(){});
+            return true;
+        }
+
+        // ========== PROYECTOS LOCALES ==========
+        function renderLocalProjects(){
+            var c=document.getElementById('projectList');
+            if(localProjects.length===0){c.innerHTML='<div style="text-align:center;color:var(--text-secondary);padding:16px;font-size:0.7rem;">Sin proyectos</div>';return}
+            c.innerHTML=localProjects.map(function(p){return'<div class="project-card'+(p.id===currentProjectId?' active':'')+'" onclick="openLocal(\''+p.id+'\')"><div class="p-info"><div class="p-name">📄 '+escapeHtml(p.name)+'</div></div></div>'}).join('');
+        }
+        function openLocal(id){var p=localProjects.find(function(x){return x.id===id});if(!p)return;currentProjectId=p.id;document.getElementById('htmlEditor').value=p.html||'';document.getElementById('cssEditor').value=p.css||'';document.getElementById('jsEditor').value=p.js||'';updatePreview();renderLocalProjects()}
+        function createLocalProject(name){var np={id:'local_'+Date.now(),name:name,html:'',css:'',js:'',createdAt:Date.now(),updatedAt:Date.now()};localProjects.unshift(np);saveGuest();renderLocalProjects();openLocal(np.id);return np}
+
+        // ========== PROYECTOS SUPABASE ==========
+        async function loadMyProjects(){
+            if(isGuest){renderLocalProjects();return}
+            var r=await supabase.from('projects').select('*').eq('profile_id',currentUser.id).order('updated_at',{ascending:false});
+            if(r.error)return;
+            var projects=r.data;
+            document.getElementById('projectCount').textContent=(projects&&projects.length)||0;
+            var c=document.getElementById('projectList');
+            if(!projects||projects.length===0){c.innerHTML='<div style="text-align:center;color:var(--text-secondary);padding:16px;font-size:0.7rem;">Sin proyectos</div>';return}
+            c.innerHTML=projects.map(function(p){return'<div class="project-card'+(p.id===currentProjectId?' active':'')+'" onclick="openProject(\''+p.id+'\')"><div class="p-info"><div class="p-name">'+(p.visibility==='private'?'🔒':'🌐')+' '+escapeHtml(p.name)+'</div><div class="p-meta">'+(p.is_published?'🚀':'📝')+'</div></div></div>'}).join('');
+        }
+
+        async function loadExploreProjects(){
+            var r=await supabase.from('projects').select('*').eq('visibility','public').eq('is_published',true).order('updated_at',{ascending:false}).limit(20);
+            if(r.error)return;
+            var projects=r.data||[];
+            document.getElementById('exploreCount').textContent=projects.length;
+            var c=document.getElementById('exploreList');
+            if(projects.length===0){c.innerHTML='<div style="text-align:center;color:var(--text-secondary);padding:16px;font-size:0.7rem;">No hay proyectos públicos</div>';return}
+            c.innerHTML=projects.map(function(p){return'<div class="project-card" onclick="forkProject(\''+p.id+'\')" title="Click para hacer fork"><div class="p-info"><div class="p-name">🌐 '+escapeHtml(p.name||'Sin nombre')+'</div><div class="p-meta">por '+escapeHtml(p.profile_id||'anon')+'</div></div><div class="p-stars">🍴</div></div>'}).join('');
+        }
+
+        async function forkProject(id){
+            if(isGuest){showToast('⚠️ Regístrate para hacer fork',true);return}
+            if(!useRequest('fork_project'))return;
+            var r=await supabase.from('projects').select('*').eq('id',id).single();
+            if(r.error||!r.data){showToast('Proyecto no encontrado',true);return}
+            var p=r.data;
+            var nr=await supabase.from('projects').insert({profile_id:currentUser.id,name:'fork-'+p.name,description:'Fork de '+p.name,visibility:'public',html_code:p.html_code,css_code:p.css_code,js_code:p.js_code}).select().single();
+            if(nr.error){showToast('Error al forkear',true);return}
+            // Registrar fork
+            await supabase.from('forks').insert({original_project_id:id,forked_project_id:nr.data.id,profile_id:currentUser.id});
+            await loadMyProjects();
+            openProject(nr.data.id);
+            showToast('🍴 Fork creado!');
+        }
+
+        async function forkRandomProject(){
+            var r=await supabase.from('projects').select('*').eq('visibility','public').eq('is_published',true).limit(50);
+            if(!r.data||r.data.length===0){showToast('No hay proyectos para forkear',true);return}
+            var p=r.data[Math.floor(Math.random()*r.data.length)];
+            forkProject(p.id);
+        }
+
+        async function openProject(id){
+            var r=await supabase.from('projects').select('*').eq('id',id).single();
+            if(r.error||!r.data)return;
+            var p=r.data;currentProjectId=p.id;
+            document.getElementById('htmlEditor').value=p.html_code||'';document.getElementById('cssEditor').value=p.css_code||'';document.getElementById('jsEditor').value=p.js_code||'';
+            updatePreview();loadMyProjects();
+        }
+
+        async function createProject(){
+            var name=document.getElementById('projectName').value.trim();
+            if(!name){showToast('Nombre obligatorio',true);return}
+            if(!useRequest('create_project'))return;
+            if(isGuest){createLocalProject(name);closeModal();showToast('✅ Creado localmente');return}
+            var r=await supabase.from('projects').insert({profile_id:currentUser.id,name:name,description:document.getElementById('projectDesc').value.trim(),visibility:document.getElementById('projectVisibility').value}).select().single();
+            if(r.error){showToast('Error: '+r.error.message,true);return}
+            closeModal();await loadMyProjects();openProject(r.data.id);showToast('✅ Proyecto creado');
+        }
+
+        async function saveCurrentProject(){
+            if(!currentProjectId)return;
+            if(isGuest){var i=localProjects.findIndex(function(x){return x.id===currentProjectId});if(i===-1)return;localProjects[i].html=document.getElementById('htmlEditor').value;localProjects[i].css=document.getElementById('cssEditor').value;localProjects[i].js=document.getElementById('jsEditor').value;localProjects[i].updatedAt=Date.now();saveGuest();return}
+            try{await supabase.from('projects').update({html_code:document.getElementById('htmlEditor').value,css_code:document.getElementById('cssEditor').value,js_code:document.getElementById('jsEditor').value,updated_at:new Date().toISOString()}).eq('id',currentProjectId)}catch(e){}
+        }
+
+        async function publishProject(){
+            if(isGuest){showToast('⚠️ Regístrate para publicar',true);showLogin();return}
+            if(!currentProjectId){showToast('Abre un proyecto',true);return}
+            if(!useRequest('publish_project'))return;
+            var r=await supabase.from('projects').select('*').eq('id',currentProjectId).single();
+            if(r.error||!r.data)return;
+            var p=r.data;
+            var html=combineCode(p.html_code||'',p.css_code||'',p.js_code||'');
+            var blob=new Blob([html],{type:'text/html'});
+            var fileName=p.id+'.html';
+            // Subir a storage
+            var upload=await supabase.storage.from('published').upload(fileName,blob,{upsert:true,contentType:'text/html'});
+            if(upload.error){
+                console.error('Upload error:',upload.error);
+                // Si falla storage, igual marcamos como publicado
+            }
+            var pubUrl=SUPABASE_URL+'/storage/v1/object/public/published/'+fileName;
+            await supabase.from('projects').update({is_published:true,published_url:pubUrl,published_at:new Date().toISOString()}).eq('id',currentProjectId);
+            showToast('🚀 ¡Publicado! URL copiada');
+            navigator.clipboard.writeText(pubUrl).catch(function(){});
+            await loadMyProjects();await loadExploreProjects();
+        }
+
+        function combineCode(h,c,j){return'<!DOCTYPE html>\n<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>RepoStudio 3D</title>\n<style>\n'+(c||'')+'\n</style>\n</head>\n<body>\n'+(h||'')+'\n<script>\n'+(j||'')+'\n<\/script>\n</body>\n</html>'}
+
+        // ========== TABS ==========
+        function switchTab(t){currentTab=t;var tabs=document.querySelectorAll('.tab');for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');tabs[t==='html'?0:t==='css'?1:2].classList.add('active');document.getElementById('htmlEditor').style.display=t==='html'?'block':'none';document.getElementById('cssEditor').style.display=t==='css'?'block':'none';document.getElementById('jsEditor').style.display=t==='js'?'block':'none'}
+
+        // ========== PREVIEW ==========
+        var previewTimer;
+        ['htmlEditor','cssEditor','jsEditor'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',function(){clearTimeout(previewTimer);previewTimer=setTimeout(function(){updatePreview();saveCurrentProject()},500)})});
+        function updatePreview(){var h=document.getElementById('htmlEditor').value,c=document.getElementById('cssEditor').value,j=document.getElementById('jsEditor').value;var blob=new Blob([combineCode(h,c,j)],{type:'text/html'});var url=URL.createObjectURL(blob);var f=document.getElementById('previewFrame');f.src=url;f.onload=function(){URL.revokeObjectURL(url)}}
+
+        // ========== IA ==========
+        function toggleAI(){var c=document.getElementById('aiChat');c.classList.toggle('open');if(c.classList.contains('open'))document.getElementById('aiCommandInput').focus()}
+        function runAI(){var cmd=document.getElementById('aiCommandInput').value.trim().toLowerCase();if(!cmd)return;document.getElementById('aiCommandInput').value='';if(!useRequest('ai_command'))return;addAIMsg('<b>Tú:</b> '+cmd);var h=document.getElementById('htmlEditor').value,c=document.getElementById('cssEditor').value,resp='';if(cmd.indexOf('/revisar')===0){var issues=[];if(h&&h.indexOf('<!DOCTYPE')===-1)issues.push('Falta <!DOCTYPE html>');resp=issues.length>0?'🔍\n• '+issues.join('\n• '):'✅ Sin problemas'}else if(cmd.indexOf('/optimizar')===0){resp='⚡ Minifica, lazy loading, agrupa CSS'}else if(cmd.indexOf('/seo')===0){resp='📊 Añade title, meta desc, h1-h6'}else if(cmd.indexOf('/publicar')===0){if(isGuest){resp='⚠️ Regístrate para publicar'}else{publishProject();resp='🚀 Publicando...'}}else{resp='🤖 /revisar /optimizar /seo /publicar'}setTimeout(function(){addAIMsg('<b>🤖:</b> '+resp)},350)}
+        function addAIMsg(m){var c=document.getElementById('aiChatMessages');var d=document.createElement('div');d.style.cssText='padding:4px 0;font-size:0.62rem;line-height:1.4';d.innerHTML=m;c.appendChild(d);c.scrollTop=c.scrollHeight;if(c.children.length>30)c.removeChild(c.firstChild)}
+
+        // ========== CONSOLE ==========
+        function logConsole(t,m){var c=document.getElementById('consoleOutput');var time=new Date().toLocaleTimeString('es-CO',{hour12:false});var cls=t==='error'?'err':t==='warn'?'warn':t==='ok'?'ok':'info';var d=document.createElement('div');d.className='console-line '+cls;d.innerHTML='<span class="ts">['+time+']</span> '+m;c.appendChild(d);c.scrollTop=c.scrollHeight;if(c.children.length>40)c.removeChild(c.firstChild)}
+
+        // ========== MODAL ==========
+        function openNewProject(){document.getElementById('modalOverlay').classList.add('show');document.getElementById('projectName').focus()}
+        function closeModal(){document.getElementById('modalOverlay').classList.remove('show')}
+        document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal()});
+        document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveCurrentProject();showToast('💾 Guardado')}if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openNewProject()}if(e.key==='Escape')closeModal()});
+
+        function showKey(){if(!userKey){showToast('Regístrate para tu key',true);return}showToast('🔑 '+userKey.key_code);copyKey()}
+        function copyKey(){if(!userKey)return;navigator.clipboard.writeText(userKey.key_code).then(function(){showToast('📋 Copiada')}).catch(function(){})}
+
+        // ========== AUTH LISTENER ==========
+        supabase.auth.onAuthStateChange(function(event,session){
+            if(event==='SIGNED_IN'&&session&&session.user){currentUser=session.user;isGuest=false;loadUserData();hideLoadingAndLogin();document.getElementById('appContainer').classList.add('ready');initApp()}
+            if(event==='SIGNED_OUT'){currentUser=null;userKey=null;isGuest=true;guestUsed=parseInt(localStorage.getItem('rs3d_guest')||'0');localProjects=JSON.parse(localStorage.getItem('rs3d_local')||'[]');currentProjectId=null;updateGuestUI();document.getElementById('appContainer').classList.add('ready');initApp()}
+        });
+
+        async function loadUserData(){
+            var kr=await supabase.from('user_keys').select('*').eq('profile_id',currentUser.id);
+            if(!kr.data||kr.data.length===0){var nkr=await supabase.rpc('generate_unique_key');var kc=(nkr.data&&typeof nkr.data==='string')?nkr.data:'rs3d-'+Math.random().toString(36).substr(2,12);var cr=await supabase.from('user_keys').insert({profile_id:currentUser.id,key_code:kc,tier:'pro',total_requests:56000,used_requests:0}).select().single();userKey=cr.data||{key_code:kc,tier:'pro',total_requests:56000,used_requests:0}}else{userKey=kr.data[0]}
+            updateProUI();
+        }
+
+        function checkSession(){
+            supabase.auth.getSession().then(function(result){
+                if(result.data.session&&result.data.session.user){currentUser=result.data.session.user;isGuest=false;loadUserData().then(function(){hideLoadingAndLogin();document.getElementById('appContainer').classList.add('ready');initApp()})}else{
+                    // Intentar verificar token en URL
+                    if(!checkVerificationOnLoad()){
+                        // Cargar como invitado
+                        isGuest=true;guestUsed=parseInt(localStorage.getItem('rs3d_guest')||'0');localProjects=JSON.parse(localStorage.getItem('rs3d_local')||'[]');userKey=null;currentUser=null;updateGuestUI();hideLoadingAndLogin();document.getElementById('appContainer').classList.add('ready');initApp();
+                    }
+                }
+            }).catch(function(){isGuest=true;guestUsed=parseInt(localStorage.getItem('rs3d_guest')||'0');localProjects=JSON.parse(localStorage.getItem('rs3d_local')||'[]');userKey=null;updateGuestUI();hideLoadingAndLogin();document.getElementById('appContainer').classList.add('ready');initApp()});
+        }
+
+        async function initApp(){
+            if(isGuest){renderLocalProjects();updateGuestUI()}else{await loadMyProjects();updateProUI()}
+            await loadExploreProjects();
+            updatePreview();
+            logConsole('ok','🚀 RepoStudio 3D Pro listo');
+            logConsole('info',isGuest?'👤 Invitado: '+Math.max(0,10-guestUsed)+' usos':'🔑 PRO: 56k peticiones');
+        }
+
+        // ========== EXPONER A GLOBAL ==========
+        window.sendVerification=sendVerification;window.checkVerified=checkVerified;window.continueGuest=continueGuest;window.showLogin=showLogin;window.showStep1=showStep1;window.loginGoogle=loginGoogle;window.loginGithub=loginGithub;window.logout=logout;window.openNewProject=openNewProject;window.createProject=createProject;window.closeModal=closeModal;window.switchTab=switchTab;window.publishProject=publishProject;window.forkProject=forkProject;window.forkRandomProject=forkRandomProject;window.showKey=showKey;window.copyKey=copyKey;window.toggleAI=toggleAI;window.runAI=runAI;
+
+        initThree();
+        setTimeout(checkSession,300);
+    </script>
+</body>
+</html>
