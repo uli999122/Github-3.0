@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Ultra · Pivot Cloud Oficial</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at 10% 20%, #030712, #000000);
+            min-height: 100vh;
+            color: #e2e8f0;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #c084fc, #60a5fa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: rgba(5, 10, 25, 0.75);
+            backdrop-filter: blur(16px);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(96, 165, 250, 0.25);
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            border-bottom: 1px dashed #2d3a5e;
+            padding-bottom: 0.5rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed #4b5563;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .upload-zone:hover {
+            border-color: #c084fc;
+            background: rgba(192, 132, 252, 0.1);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        video {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 12px;
+            margin-top: 0.5rem;
+        }
+
+        button {
+            background: linear-gradient(95deg, #3b82f6, #8b5cf6);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 0.8rem;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            font-size: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background: #0f172a80;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+
+        .video-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .video-item {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .video-thumb {
+            width: 60px;
+            height: 45px;
+            background: #0f172a;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .video-info {
+            flex: 1;
+            font-size: 0.7rem;
+        }
+
+        .delete-btn {
+            background: #ef4444;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.7rem;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .flex-btns {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+
+        .small-btn {
+            background: #1e2a4a;
+            padding: 0.4rem;
+            font-size: 0.7rem;
+            margin-top: 0;
+        }
+
+        .debug {
+            margin-top: 1.5rem;
+            background: #0f172a;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            font-family: monospace;
+            font-size: 0.7rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo">🌌 NEBULA ULTRA</div>
+    <div class="subtitle">Pivot Cloud · Documentación Oficial</div>
+
+    <div class="dashboard">
+        <div class="card">
+            <div class="card-title">📤 Subir video</div>
+            <div class="upload-zone" id="uploadZone">
+                <div>🎥</div>
+                <p>Seleccionar archivo<br><small>MP4, MOV, webm · hasta 15MB</small></p>
+                <input type="file" id="fileInput" accept="video/*">
+            </div>
+            <div id="previewContainer"></div>
+            <div id="uploadStatus" class="status"></div>
+            <button id="uploadBtn" disabled>🚀 Subir a Pivot Cloud</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📁 Nebula Drive</div>
+            <div id="videoListContainer" class="video-list">
+                <div style="text-align:center; padding:1rem;">Cargando...</div>
+            </div>
+            <div class="flex-btns">
+                <button id="refreshBtn" class="small-btn">🔄 Actualizar</button>
+                <button id="clearAllBtn" class="small-btn" style="background:#7f1a1a;">🗑️ Borrar todo</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="debug" id="debug">
+        <strong>🔍 API Log (según documentación oficial):</strong><br>
+        Inicializando...
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // USANDO EXACTAMENTE LOS ENDPOINTS DE LA DOCUMENTACIÓN
+    // ============================================================
+    const API_BASE = "https://pivot-cloud.vercel.app/api";
+    const APP_ID = "nebula-ultra";
+    const APP_TOKEN = "pvt_1780835624538_zv7xwbvr6ts2fky22h30is";
+    
+    // Almacenamiento local (fallback mientras la API se estabiliza)
+    let localVideos = JSON.parse(localStorage.getItem('nebula_videos') || '[]');
+    
+    function log(msg) {
+        const debugDiv = document.getElementById('debug');
+        debugDiv.innerHTML += `<br>${new Date().toLocaleTimeString()}: ${msg}`;
+        debugDiv.scrollTop = debugDiv.scrollHeight;
+        console.log(msg);
+    }
+    
+    // ============================================================
+    // 1. GET /api/token - Obtener Token Maestro
+    // ============================================================
+    async function getMasterToken() {
+        try {
+            log("📡 GET /api/token");
+            const res = await fetch(`${API_BASE}/token`);
+            const data = await res.json();
+            log(`Respuesta: ${JSON.stringify(data)}`);
+            return data.token;
+        } catch(e) {
+            log(`❌ Error: ${e.message}`);
+            return null;
+        }
+    }
+    
+    // ============================================================
+    // 2. POST /api/register - Registrar app
+    // ============================================================
+    async function registerApp(masterToken) {
+        try {
+            log(`📡 POST /api/register - App: ${APP_ID}`);
+            const res = await fetch(`${API_BASE}/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    appId: APP_ID,
+                    appToken: masterToken || APP_TOKEN,
+                    credentials: {
+                        name: "Nebula Ultra",
+                        version: "2.0",
+                        description: "Almacenamiento de videos"
+                    }
+                })
+            });
+            const data = await res.json();
+            log(`Respuesta: ${JSON.stringify(data)}`);
+            return data.success;
+        } catch(e) {
+            log(`❌ Error: ${e.message}`);
+            return false;
+        }
+    }
+    
+    // ============================================================
+    // 3. POST /api/log - Registrar evento
+    // ============================================================
+    async function logAction(action, details) {
+        try {
+            const res = await fetch(`${API_BASE}/log`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    appId: APP_ID,
+                    action: action,
+                    details: details
+                })
+            });
+            const data = await res.json();
+            log(`📝 Log: ${action} → ${data.success ? 'OK' : 'FAIL'}`);
+            return data.success;
+        } catch(e) {
+            log(`❌ Log error: ${e.message}`);
+            return false;
+        }
+    }
+    
+    // ============================================================
+    // 4. POST /api/env/:platform - Guardar variable (guardar videos)
+    // ============================================================
+    async function saveVideosToCloud(videos) {
+        try {
+            log(`📡 POST /api/env/${APP_ID} - Guardando ${videos.length} videos`);
+            const res = await fetch(`${API_BASE}/env/${APP_ID}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    key: "nebula_videos",
+                    value: JSON.stringify(videos)
+                })
+            });
+            const data = await res.json();
+            log(`Respuesta: ${JSON.stringify(data)}`);
+            return data.success;
+        } catch(e) {
+            log(`❌ Error guardando: ${e.message}`);
+            return false;
+        }
+    }
+    
+    // ============================================================
+    // 5. GET /api/env/:platform - Obtener variables (cargar videos)
+    // ============================================================
+    async function loadVideosFromCloud() {
+        try {
+            log(`📡 GET /api/env/${APP_ID}`);
+            const res = await fetch(`${API_BASE}/env/${APP_ID}`);
+            const data = await res.json();
+            log(`Respuesta: ${JSON.stringify(data).substring(0, 200)}`);
+            
+            if (data.success && data.data && data.data.nebula_videos) {
+                return JSON.parse(data.data.nebula_videos);
+            }
+            return [];
+        } catch(e) {
+            log(`❌ Error cargando: ${e.message}`);
+            return null;
+        }
+    }
+    
+    // ============================================================
+    // 6. GET /api/credentials/:platform - Obtener credenciales
+    // ============================================================
+    async function getCredentials() {
+        try {
+            log(`📡 GET /api/credentials/${APP_ID}`);
+            const res = await fetch(`${API_BASE}/credentials/${APP_ID}`);
+            const data = await res.json();
+            log(`Credenciales: ${JSON.stringify(data)}`);
+            return data;
+        } catch(e) {
+            log(`❌ Error: ${e.message}`);
+            return null;
+        }
+    }
+    
+    // ============================================================
+    // UI: Renderizar videos
+    // ============================================================
+    function renderVideos() {
+        const container = document.getElementById('videoListContainer');
+        if (!localVideos.length) {
+            container.innerHTML = '<div style="text-align:center; padding:1rem;">🌙 Vacío · sube un video</div>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        localVideos.forEach((video, idx) => {
+            const div = document.createElement('div');
+            div.className = 'video-item';
+            div.innerHTML = `
+                <video class="video-thumb" src="${video.dataURL}" muted></video>
+                <div class="video-info">
+                    <div><strong>${escapeHtml(video.name)}</strong></div>
+                    <div>${(video.size / 1024 / 1024).toFixed(2)} MB</div>
+                    <div>${new Date(video.uploadedAt).toLocaleString()}</div>
+                </div>
+                <button class="delete-btn" data-idx="${idx}">🗑️</button>
+            `;
+            container.appendChild(div);
+        });
+        
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const idx = parseInt(btn.dataset.idx);
+                const deleted = localVideos[idx];
+                localVideos.splice(idx, 1);
+                localStorage.setItem('nebula_videos', JSON.stringify(localVideos));
+                await saveVideosToCloud(localVideos);
+                await logAction("VIDEO_DELETED", `Nombre: ${deleted.name}`);
+                renderVideos();
+                log(`🗑️ Eliminado: ${deleted.name}`);
+            });
+        });
+        
+        document.querySelectorAll('.video-thumb').forEach(vid => {
+            vid.addEventListener('mouseenter', () => vid.play());
+            vid.addEventListener('mouseleave', () => { vid.pause(); vid.currentTime = 0; });
+        });
+    }
+    
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // ============================================================
+    // Subir video
+    // ============================================================
+    let selectedFile = null;
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const previewContainer = document.getElementById('previewContainer');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadStatus = document.getElementById('uploadStatus');
+    
+    uploadZone.addEventListener('click', () => fileInput.click());
+    
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            selectedFile = e.target.files[0];
+            if (selectedFile.size > 15 * 1024 * 1024) {
+                uploadStatus.innerHTML = '❌ Máximo 15MB';
+                selectedFile = null;
+                uploadBtn.disabled = true;
+                return;
+            }
+            const url = URL.createObjectURL(selectedFile);
+            previewContainer.innerHTML = `<video src="${url}" controls style="max-width:100%; max-height:120px"></video>`;
+            uploadBtn.disabled = false;
+            uploadStatus.innerHTML = '✅ Listo para subir';
+        }
+    });
+    
+    uploadBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        
+        uploadBtn.disabled = true;
+        uploadStatus.innerHTML = '📀 Codificando video...';
+        
+        try {
+            const reader = new FileReader();
+            const dataURL = await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(selectedFile);
+            });
+            
+            const newVideo = {
+                id: Date.now(),
+                name: selectedFile.name,
+                size: selectedFile.size,
+                dataURL: dataURL,
+                uploadedAt: new Date().toISOString()
+            };
+            
+            localVideos.push(newVideo);
+            localStorage.setItem('nebula_videos', JSON.stringify(localVideos));
+            
+            // Intentar sincronizar con la nube
+            await saveVideosToCloud(localVideos);
+            await logAction("VIDEO_UPLOADED", `Nombre: ${selectedFile.name}, Tamaño: ${(selectedFile.size/1024/1024).toFixed(2)}MB`);
+            
+            uploadStatus.innerHTML = `✅ ${selectedFile.name} subido correctamente`;
+            selectedFile = null;
+            fileInput.value = '';
+            previewContainer.innerHTML = '';
+            uploadBtn.disabled = true;
+            renderVideos();
+            
+            setTimeout(() => { uploadStatus.innerHTML = ''; }, 3000);
+            
+        } catch(err) {
+            uploadStatus.innerHTML = `❌ Error: ${err.message}`;
+            log(`❌ Subida fallida: ${err.message}`);
+            uploadBtn.disabled = false;
+        }
+    });
+    
+    // Botones
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+        const cloudVideos = await loadVideosFromCloud();
+        if (cloudVideos && cloudVideos.length) {
+            localVideos = cloudVideos;
+            localStorage.setItem('nebula_videos', JSON.stringify(localVideos));
+            renderVideos();
+            log('✅ Sincronizado desde la nube');
+        } else {
+            log('⚠️ No se pudo sincronizar, usando local');
+        }
+    });
+    
+    document.getElementById('clearAllBtn').addEventListener('click', async () => {
+        if (confirm('⚠️ ¿Eliminar TODOS los videos?')) {
+            localVideos = [];
+            localStorage.setItem('nebula_videos', '[]');
+            await saveVideosToCloud([]);
+            await logAction("ALL_VIDEOS_DELETED", "Borrado completo");
+            renderVideos();
+            log('🗑️ Todos los videos eliminados');
+        }
+    });
+    
+    // ============================================================
+    // INICIALIZACIÓN: Probar todos los endpoints
+    // ============================================================
+    async function init() {
+        log("🚀 Iniciando Nebula Ultra con documentación oficial");
+        log(`🔑 API Key: ${APP_TOKEN.substring(0, 20)}...`);
+        
+        // Probar cada endpoint según documentación
+        const masterToken = await getMasterToken();
+        if (masterToken) log(`✅ Token maestro obtenido: ${masterToken.substring(0, 20)}...`);
+        
+        await registerApp(masterToken || APP_TOKEN);
+        await getCredentials();
+        
+        // Cargar videos desde la nube si existen
+        const cloudVideos = await loadVideosFromCloud();
+        if (cloudVideos && cloudVideos.length) {
+            localVideos = cloudVideos;
+            localStorage.setItem('nebula_videos', JSON.stringify(localVideos));
+            log(`📹 Cargados ${localVideos.length} videos desde Pivot Cloud`);
+        } else {
+            log(`📹 Usando almacenamiento local (${localVideos.length} videos)`);
+        }
+        
+        renderVideos();
+        log("✅ Listo. Puedes subir videos.");
+    }
+    
+    init();
+</script>
+</body>
+</html>
