@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pivot Analytics • Business Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a0a;font-family:'Inter',sans-serif;color:#fff}
+        .header{padding:16px 24px;background:#0f0f0f;border-bottom:1px solid #2a2a2a;display:flex;justify-content:space-between;align-items:center}
+        .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:12px;display:flex;align-items:center;justify-content:center}
+        .logo-text{font-size:18px;font-weight:900;background:linear-gradient(135deg,#f97316,#ea580c);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .eco-nav{display:flex;gap:8px;padding:8px 16px;background:#0a0a0a;border-bottom:1px solid #2a2a2a;overflow-x:auto}
+        .eco-link{color:#888;text-decoration:none;font-size:12px;padding:6px 12px;border-radius:20px;background:#1a1a1a;white-space:nowrap}
+        .eco-link.active{background:#f97316;color:#fff}
+        .container{max-width:1200px;margin:0 auto;padding:20px}
+        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:30px}
+        .stat-card{background:#0f0f0f;border-radius:16px;padding:20px;text-align:center;border:1px solid #2a2a2a}
+        .stat-value{font-size:28px;font-weight:800;color:#f97316}
+        .charts{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+        .chart-card{background:#0f0f0f;border-radius:16px;padding:20px;border:1px solid #2a2a2a}
+        canvas{max-height:300px}
+        .status{font-size:11px;color:#f97316}
+    </style>
+</head>
+<body>
+<div class="eco-nav">
+    <a href="https://pivot-lax.vercel.app" class="eco-link">📹 Lax</a>
+    <a href="https://pivot-tv.vercel.app" class="eco-link">📺 TV</a>
+    <a href="https://pivot-kids.vercel.app" class="eco-link">🧒 Kids</a>
+    <a href="https://pivot-music.vercel.app" class="eco-link">🎵 Music</a>
+    <a href="https://pivot-ai.vercel.app" class="eco-link">🧠 AI</a>
+    <a href="https://pivot-news.vercel.app" class="eco-link">📰 News</a>
+    <a href="https://pivot-studio.vercel.app" class="eco-link">🎬 Studio</a>
+    <a href="https://pivot-nexus.vercel.app" class="eco-link">🌐 Nexus</a>
+    <a href="https://pivot-video.vercel.app" class="eco-link">🎬 Video</a>
+    <a href="https://pivot-design.vercel.app" class="eco-link">🎨 Design</a>
+    <a href="https://pivot-shop.vercel.app" class="eco-link">🛍️ Shop</a>
+    <a href="https://pivot-pay.vercel.app" class="eco-link">💳 Pay</a>
+    <a href="https://pivot-academy.vercel.app" class="eco-link">📚 Academy</a>
+    <a href="https://pivot-crm.vercel.app" class="eco-link">📊 CRM</a>
+    <a href="https://pivot-forms.vercel.app" class="eco-link">📝 Forms</a>
+    <a href="#" class="eco-link active">📈 Analytics</a>
+    <a href="https://pivot-health.vercel.app" class="eco-link">❤️ Health</a>
+    <a href="https://pivot-translate.vercel.app" class="eco-link">🌐 Translate</a>
+    <a href="https://pivot-vpn.vercel.app" class="eco-link">🔒 VPN</a>
+    <a href="https://pivot-vault.vercel.app" class="eco-link">🔐 Vault</a>
+    <a href="https://pivot-comics.vercel.app" class="eco-link">📖 Comics</a>
+    <a href="https://pivot-manager.vercel.app" class="eco-link">📦 Manager</a>
+    <a href="https://pivot-cloud.vercel.app" class="eco-link">☁️ Cloud</a>
+</div>
+<header class="header"><div class="logo-icon"><svg viewBox="0 0 24 24" fill="white" width="20"><polygon points="7,4 19,12 7,20"/></svg></div><span class="logo-text">PIVOT ANALYTICS</span><div><span class="status" id="connStatus">🟢 Conectado</span></div></header>
+<div class="container">
+    <div class="stats"><div class="stat-card"><div class="stat-value">45.2K</div><div>Visitas</div></div><div class="stat-card"><div class="stat-value">12.8K</div><div>Usuarios</div></div><div class="stat-card"><div class="stat-value">43%</div><div>Rebote</div></div><div class="stat-card"><div class="stat-value">4m32s</div><div>Tiempo</div></div></div>
+    <div class="charts"><div class="chart-card"><canvas id="visitsChart"></canvas></div><div class="chart-card"><canvas id="platformsChart"></canvas></div></div>
+</div>
+<script>
+const visitsData={labels:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],values:[1250,1480,1620,1890,2150,2430,2870]};
+const platformsData={labels:['Lax','TV','AI','Music','Kids'],values:[4523,3210,2890,2150,1870]};
+new Chart(document.getElementById('visitsChart'),{type:'line',data:{labels:visitsData.labels,datasets:[{label:'Visitas',data:visitsData.values,borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.1)',fill:true}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#fff'}}}}});
+new Chart(document.getElementById('platformsChart'),{type:'doughnut',data:{labels:platformsData.labels,datasets:[{data:platformsData.values,backgroundColor:['#f97316','#3b82f6','#8b5cf6','#10b981','#ec4899']}]},options:{responsive:true,plugins:{legend:{labels:{color:'#fff'}}}}});
+</script>
+</body>
+</html>
