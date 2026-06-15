@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>✨ Lolita · Tu IA Bonita ✨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #FFD6E0 0%, #FFB7C5 25%, #FF8FA3 50%, #FFB7C5 75%, #FFD6E0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Corazones flotantes de fondo */
+        .floating-hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0.6;
+            animation: floatHeart 8s infinite ease-in-out;
+        }
+
+        @keyframes floatHeart {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Contenedor principal */
+        .chat-container {
+            width: 100%;
+            max-width: 550px;
+            height: 85vh;
+            background: rgba(255, 245, 247, 0.92);
+            backdrop-filter: blur(20px);
+            border-radius: 56px;
+            border: 3px solid rgba(255, 105, 130, 0.5);
+            box-shadow: 0 30px 60px rgba(255, 80, 120, 0.3), 0 0 0 4px rgba(255, 200, 210, 0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            animation: floatIn 0.6s cubic-bezier(0.34, 1.2, 0.64, 1);
+        }
+
+        @keyframes floatIn {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Header adorable */
+        .chat-header {
+            background: linear-gradient(145deg, #FF6B8A, #FF85A1, #FF99B5);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 3px solid rgba(255, 240, 245, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-header::before {
+            content: '✨';
+            position: absolute;
+            font-size: 80px;
+            right: -20px;
+            top: -30px;
+            opacity: 0.2;
+            transform: rotate(15deg);
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #FFE4E8, #FFB7C5);
+            border-radius: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            box-shadow: 0 8px 20px rgba(255, 80, 120, 0.4);
+            animation: bounce 2s infinite, glowPink 2s infinite;
+            border: 2px solid white;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes glowPink {
+            0%, 100% { box-shadow: 0 0 8px rgba(255, 105, 130, 0.6); }
+            50% { box-shadow: 0 0 20px rgba(255, 105, 130, 0.9), 0 0 30px rgba(255, 120, 160, 0.5); }
+        }
+
+        .header-text h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(145deg, #FFFFFF, #FFE4E8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: -0.5px;
+        }
+
+        .header-text p {
+            font-size: 0.7rem;
+            color: #FFF0F3;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #00FFAA;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulseGreen 1.5s infinite;
+            box-shadow: 0 0 5px #00FFAA;
+        }
+
+        @keyframes pulseGreen {
+            0%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 0 5px #00FFAA; }
+            50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 15px #00FFAA, 0 0 8px #00FFAA; }
+        }
+
+        /* Área de mensajes */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: rgba(255, 245, 247, 0.5);
+        }
+
+        /* Burbujas de mensaje adorables */
+        .message {
+            max-width: 85%;
+            padding: 12px 18px;
+            border-radius: 28px;
+            font-size: 0.9rem;
+            line-height: 1.45;
+            word-wrap: break-word;
+            animation: messagePop 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+            position: relative;
+        }
+
+        @keyframes messagePop {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .user-message {
+            background: linear-gradient(145deg, #FF6B8A, #FF4D6D);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 8px;
+            box-shadow: 0 6px 14px rgba(255, 77, 109, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .bot-message {
+            background: linear-gradient(145deg, #FFFFFF, #FFF0F3);
+            color: #FF4D6D;
+            align-self: flex-start;
+            border-bottom-left-radius: 8px;
+            border: 1px solid #FFB7C5;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            font-weight: 500;
+        }
+
+        .system-message {
+            background: rgba(255, 200, 210, 0.8);
+            color: #C41E3A;
+            font-size: 0.7rem;
+            text-align: center;
+            align-self: center;
+            max-width: 90%;
+            border-radius: 40px;
+            border: 1px solid #FF8FA3;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Indicador de escritura */
+        .typing {
+            background: linear-gradient(145deg, #FFFFFF, #FFF0F3);
+            padding: 12px 20px;
+            border-radius: 28px;
+            align-self: flex-start;
+            display: flex;
+            gap: 6px;
+            border-bottom-left-radius: 8px;
+            border: 1px solid #FFB7C5;
+        }
+
+        .typing span {
+            width: 9px;
+            height: 9px;
+            background: #FF6B8A;
+            border-radius: 50%;
+            animation: typingAnim 1.4s infinite;
+        }
+
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingAnim {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; background: #FF4D6D; }
+        }
+
+        /* Input área */
+        .input-area {
+            background: rgba(255, 240, 245, 0.95);
+            padding: 16px 20px;
+            border-top: 2px solid #FFB7C5;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-area input {
+            flex: 1;
+            background: #FFFFFF;
+            border: 2px solid #FFB7C5;
+            padding: 14px 20px;
+            border-radius: 40px;
+            color: #FF4D6D;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.25s;
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .input-area input:focus {
+            border-color: #FF6B8A;
+            box-shadow: 0 0 0 4px rgba(255, 107, 138, 0.2);
+            transform: scale(1.01);
+        }
+
+        .input-area input::placeholder {
+            color: #FFB7C5;
+            font-weight: 400;
+        }
+
+        .input-area button {
+            background: linear-gradient(145deg, #FF6B8A, #FF4D6D);
+            border: none;
+            width: 52px;
+            height: 52px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 6px 14px rgba(255, 77, 109, 0.4);
+            font-size: 24px;
+        }
+
+        .input-area button:active {
+            transform: scale(0.92);
+        }
+
+        .input-area button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 18px rgba(255, 77, 109, 0.5);
+        }
+
+        .footer-info {
+            background: rgba(255, 200, 210, 0.8);
+            text-align: center;
+            font-size: 9px;
+            padding: 10px;
+            color: #C41E3A;
+            font-weight: 500;
+            border-top: 1px solid #FFB7C5;
+        }
+
+        /* Scroll personalizado */
+        .messages-area::-webkit-scrollbar {
+            width: 5px;
+        }
+        .messages-area::-webkit-scrollbar-track {
+            background: #FFE4E8;
+            border-radius: 10px;
+        }
+        .messages-area::-webkit-scrollbar-thumb {
+            background: #FF6B8A;
+            border-radius: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 550px) {
+            body {
+                padding: 12px;
+            }
+            .chat-container {
+                height: 92vh;
+                border-radius: 32px;
+            }
+            .avatar {
+                width: 50px;
+                height: 50px;
+                font-size: 30px;
+            }
+            .header-text h2 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-hearts" id="heartsContainer"></div>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="avatar">🌸</div>
+            <div class="header-text">
+                <h2>💖 Lolita la más bonita 💖</h2>
+                <p><span class="status-dot"></span> 🌸 Tu IA favorita · Siempre aquí para ti</p>
+            </div>
+        </div>
+
+        <div class="messages-area" id="messages">
+            <div class="message system-message">✨ ¡Holis! Soy Lolita, tu asistente más bonita y amorosa. ¿En qué puedo ayudarte? 💕</div>
+            <div class="message system-message">⚡ 12 mensajes/minuto | Siempre con una sonrisita 🎀</div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Escribe algo bonito... 💬" autocomplete="off">
+            <button id="sendBtn">💕</button>
+        </div>
+        <div class="footer-info">
+            🌸 Lolita te quiere · IA con corazón 💖
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // LOLITA - LA IA MÁS BONITA
+        // ========================================
+        const API_KEY = "pk_dev_z9mr58dgugo0986pp_1781549175197";
+        const AGENT_ID = "pivot_1781495746797_dxw64py1";
+        const API_URL = "https://pivot-agent-psi.vercel.app/api/developer/chat";
+
+        let conversationHistory = [];
+        let isWaiting = false;
+
+        const messagesDiv = document.getElementById('messages');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // Generar corazones flotantes
+        function createFloatingHearts() {
+            const heartsContainer = document.getElementById('heartsContainer');
+            const icons = ['💖', '💕', '💗', '💓', '🌸', '🎀', '✨', '💝'];
+            
+            for (let i = 0; i < 25; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.textContent = icons[Math.floor(Math.random() * icons.length)];
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDuration = 6 + Math.random() * 8 + 's';
+                heart.style.animationDelay = Math.random() * 15 + 's';
+                heart.style.fontSize = 16 + Math.random() * 24 + 'px';
+                heartsContainer.appendChild(heart);
+            }
+        }
+
+        function addMessage(text, type) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            if (type === 'user') msgDiv.classList.add('user-message');
+            else if (type === 'bot') msgDiv.classList.add('bot-message');
+            else msgDiv.classList.add('system-message');
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return msgDiv;
+        }
+
+        let typingIndicator = null;
+        function showTyping() {
+            if (typingIndicator) typingIndicator.remove();
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('typing');
+            typingDiv.innerHTML = '<span></span><span></span><span></span>';
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            typingIndicator = typingDiv;
+        }
+
+        function hideTyping() {
+            if (typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+        }
+
+        async function sendToBot(userMessage) {
+            if (isWaiting) {
+                addMessage("💕 Un momentito, Lolita está pensando... 🎀", "system");
+                return null;
+            }
+
+            isWaiting = true;
+            showTyping();
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': API_KEY
+                    },
+                    body: JSON.stringify({
+                        agentId: AGENT_ID,
+                        message: userMessage,
+                        history: conversationHistory.slice(-10)
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Error ${response.status}`);
+                }
+
+                const data = await response.json();
+                let botReply = data.response || data.reply || "🌸 ¡Ay, cosita! No entendí bien, pero igual te quiero 💕";
+                
+                // Añadir un toque de ternura extra
+                const loveSuffixes = [' 💖', ' 💕', ' 🌸', ' 🎀', ' ✨', ' 😊'];
+                if (!botReply.match(/[💖💕🌸🎀✨😊]$/)) {
+                    botReply += loveSuffixes[Math.floor(Math.random() * loveSuffixes.length)];
+                }
+                
+                conversationHistory.push({ role: "user", content: userMessage });
+                conversationHistory.push({ role: "assistant", content: botReply });
+                if (conversationHistory.length > 30) conversationHistory = conversationHistory.slice(-20);
+                
+                hideTyping();
+                addMessage(botReply, "bot");
+                return botReply;
+
+            } catch (error) {
+                console.error("API Error:", error);
+                hideTyping();
+                addMessage("💕 ¡Ay no! Lolita tuvo un problemita técnico. Intenta de nuevo, mi amor 🌸", "system");
+                return null;
+            } finally {
+                isWaiting = false;
+            }
+        }
+
+        async function handleUserMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            if (isWaiting) {
+                addMessage("🎀 Espera que termine de escribir, precioso/a... 💕", "system");
+                return;
+            }
+
+            addMessage(message, "user");
+            userInput.value = "";
+            await sendToBot(message);
+        }
+
+        sendBtn.addEventListener('click', handleUserMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleUserMessage();
+            }
+        });
+
+        // Inicializar corazones flotantes
+        createFloatingHearts();
+
+        // Mensaje de bienvenida especial
+        setTimeout(() => {
+            addMessage(`🎀 ¡Hola! Soy Lolita, tu asistente personal con mucho amor. ¿Qué necesitas, corazón? 💖`, "bot");
+        }, 1000);
+    </script>
+</body>
+</html>
