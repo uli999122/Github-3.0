@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>🌸 LOLITA · Tu IA más Bonita 🌸</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #ffe6f0, #ffb3c6);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-family: 'Poppins', system-ui, sans-serif;
+        }
+
+        .lolita-wrapper {
+            width: 100%;
+            max-width: 550px;
+            height: 85vh;
+            background: rgba(255, 248, 245, 0.95);
+            border-radius: 64px;
+            border: 3px solid #ffc0d0;
+            box-shadow: 0 25px 45px rgba(255, 80, 120, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lolita-header {
+            background: linear-gradient(135deg, #ff8fad, #ff6b8f);
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            border-bottom: 3px solid #ffe2ec;
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, white, #ffb7ca);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            border: 2px solid white;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .title h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(145deg, white, #ffeef4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .title p {
+            font-size: 0.7rem;
+            color: #fff0f5;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .iframe-container {
+            flex: 1;
+            background: transparent;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+
+        .footer {
+            background: #ffeef2;
+            text-align: center;
+            font-size: 9px;
+            padding: 10px;
+            color: #bc4e6e;
+            border-top: 1px solid #ffcddb;
+        }
+    </style>
+</head>
+<body>
+    <div class="lolita-wrapper">
+        <div class="lolita-header">
+            <div class="avatar">🌸</div>
+            <div class="title">
+                <h2>💖 Lolita la más bonita 💖</h2>
+                <p><span style="width:8px;height:8px;background:#a3ffb5;border-radius:50%;display:inline-block;"></span> Tu IA favorita · Siempre aquí para ti</p>
+            </div>
+        </div>
+        <div class="iframe-container">
+            <iframe 
+                src="https://pivot-agent-psi.vercel.app/api/widget/pivot_1781578102527_5uf4nqj0"
+                title="Lolita"
+                allow="microphone"
+            ></iframe>
+        </div>
+        <div class="footer">
+            🌸 Lolita te quiere con todo el corazón · IA con brillitos ✨
+        </div>
+    </div>
+</body>
+</html>
