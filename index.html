@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pivot Agent - Premium Interface</title>
-<!-- Marked.js para renderizar Markdown -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root {
@@ -279,9 +278,9 @@
 </div>
 
 <script>
-  // ⚠️ Reemplaza esta URL por el endpoint real de tu agente Pivot
-  const TOKEN_PIVOT = "pivot_c43fe7cfdee50e655f04ea96.5bba8804baee3ff8";
-  const API_ENDPOINT = "https://tu-endpoint-real.vercel.app/api/chat";
+  // Token extraído del link: https://pivot-agent-psi.vercel.app/share/pivot_c43fe7cfdee50e655f04ea96.5bba8804baee3ff8
+  const SHARE_TOKEN = "pivot_c43fe7cfdee50e655f04ea96.5bba8804baee3ff8";
+  const API_ENDPOINT = "https://pivot-agent-psi.vercel.app/api/agent?action=share-chat";
 
   const chatContainer   = document.getElementById('chatContainer');
   const messageInput    = document.getElementById('messageInput');
@@ -308,7 +307,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shareToken: TOKEN_PIVOT,
+          shareToken: SHARE_TOKEN,
           message: query
         })
       });
@@ -318,10 +317,17 @@
       if (data.ok) {
         renderizarGlobo(data.response, 'agent', true);
       } else {
-        renderizarGlobo(
-          `Error de la plataforma: ${data.error} (Código: ${data.code || 'Desconocido'})`,
-          'system'
-        );
+        // Manejo especial para rate limit / sin créditos
+        if (data.code === 402) {
+          renderizarGlobo("El agente no tiene créditos disponibles en este momento. Contacta al administrador.", 'system');
+        } else if (data.code === 429) {
+          renderizarGlobo("Demasiados mensajes seguidos. Espera unos segundos e intenta de nuevo.", 'system');
+        } else {
+          renderizarGlobo(
+            `Error de la plataforma: ${data.error || 'Desconocido'} (Código: ${data.code || 'N/A'})`,
+            'system'
+          );
+        }
       }
     } catch (err) {
       renderizarGlobo("No se pudo establecer conexión con los servidores de Pivot Agent.", 'system');
@@ -335,7 +341,6 @@
     elementoMensaje.classList.add('message', remitente);
 
     if (contieneMarkdown) {
-      // Sanitización básica antes de Marked (evita inyección de scripts)
       const limpio = texto
         .replace(/<script[\s\S]*?<\/script>/gi, '')
         .replace(/on\w+\s*=\s*"[^"]*"/gi, '');
@@ -360,13 +365,10 @@
     }
   }
 
-  // Botón para limpiar la conversación
   function limpiarChat() {
-    // Elimina todos los mensajes pero conserva el indicador de escritura
     const mensajes = chatContainer.querySelectorAll('.message');
     mensajes.forEach(m => m.remove());
 
-    // Mensaje de bienvenida renovado
     const bienvenida = document.createElement('div');
     bienvenida.className = 'message agent';
     bienvenida.innerText = 'Conversación reiniciada. ¿En qué puedo ayudarte ahora? ✨';
