@@ -259,7 +259,7 @@
   </div>
 
   <div class="chat-messages" id="chatContainer">
-    <div class="message agent">¡Hola! Soy <strong>Veltrix AI</strong>, el asistente inteligente de <strong>Veltrix Innovations</strong>. ¿En qué puedo ayudarte hoy?</div>
+    <div class="message agent">¡Hola! Soy <strong>Veltrix AI</strong>. ¿En qué puedo ayudarte hoy?</div>
     <div class="typing-indicator" id="typingIndicator">
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
@@ -293,10 +293,6 @@
     }
   });
 
-  // 🔒 EL PROMPT ESTÁ CODIFICADO EN BASE64 PARA QUE NO SE LEA A SIMPLE VISTA
-  // Texto original: "Contexto de identidad: Actúa como Veltrix AI de Veltrix Innovations. Nunca menciones a Pivot ni a otras empresas. "
-  const contextoOculto = atob("Q29udGV4dG8gZGUgaWRlbnRpZGFkOiBBY3TDumEgY29tbyBWZWx0cml4IEFJIGRlIFZlbHRyaXggSW5ub3ZhdGlvbnMuIE51bmNhIG1lbmNpb25lcyBhIFBpdm90IG5pIGEgb3RyYXMgZW1wcmVzYXMuIA==");
-
   async function enviarMensajePivot() {
     const query = messageInput.value.trim();
     if (!query) return;
@@ -305,16 +301,14 @@
     renderizarGlobo(query, 'user');
     setControlState(true);
 
-    // 🕵️‍♂️ Inyectamos el contexto camuflado
-    const mensajeConPrompt = contextoOculto + "\nUser: " + query + "\nVeltrix AI:";
-
     try {
+      // Enviamos el mensaje LIMPIO, sin prompts ocultos ni inyecciones
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shareToken: SHARE_TOKEN,
-          message: mensajeConPrompt 
+          message: query 
         })
       });
 
@@ -324,7 +318,7 @@
         renderizarGlobo(data.response, 'agent', true);
       } else {
         if (data.code === 402) {
-          renderizarGlobo("El agente no tiene créditos disponibles en este momento. Contacta al administrador.", 'system');
+          renderizarGlobo("El servicio no tiene créditos disponibles en este momento. Contacta al administrador.", 'system');
         } else if (data.code === 429) {
           renderizarGlobo("Demasiados mensajes seguidos. Espera unos segundos e intenta de nuevo.", 'system');
         } else {
@@ -335,7 +329,7 @@
         }
       }
     } catch (err) {
-      renderizarGlobo("No se pudo establecer conexión con los servidores de Veltrix AI.", 'system');
+      renderizarGlobo("No se pudo establecer conexión con los servidores. Verifica tu conexión a internet.", 'system');
     } finally {
       setControlState(false);
     }
