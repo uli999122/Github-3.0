@@ -3,556 +3,193 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#05050a">
-<title>Chat de Prueba — Nanan</title>
+<title>ZERO-DAY // Core Access</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-
-:root{
---bg:#05050a;
---surface:#0d0d16;
---surface2:#151525;
---surface3:#1a1a2e;
---text:#f0f0f5;
---text2:#8888aa;
---text3:#5a5a75;
---accent:#7c3aed;
---accent2:#a78bfa;
---accent3:#c084fc;
---gradient:linear-gradient(135deg,#7c3aed 0%,#a78bfa 50%,#c084fc 100%);
---gradient-soft:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,139,250,0.08));
---danger:#ef4444;
---success:#34d399;
---warning:#f59e0b;
---font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
---font-display:'Space Grotesk','Inter',sans-serif;
---mono:'JetBrains Mono','Fira Code',Consolas,monospace;
---safe-top:env(safe-area-inset-top,0px);
---safe-bottom:env(safe-area-inset-bottom,0px);
-}
-
-html,body{width:100%;height:100%;background:var(--bg);font-family:var(--font);color:var(--text);overflow:hidden;font-size:14px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-
-body{display:flex;justify-content:center;align-items:center;position:relative}
-
-body::before{
-content:'';position:fixed;inset:0;
-background:radial-gradient(ellipse at 20% 0%,rgba(124,58,237,0.25) 0%,transparent 55%),radial-gradient(ellipse at 80% 100%,rgba(168,139,250,0.15) 0%,transparent 55%),radial-gradient(ellipse at 50% 50%,rgba(192,132,252,0.08) 0%,transparent 70%);
-pointer-events:none;z-index:0;animation:bgShift 20s ease-in-out infinite;
-}
-
-@keyframes bgShift{0%,100%{opacity:1;filter:hue-rotate(0deg)}50%{opacity:0.8;filter:hue-rotate(15deg)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes fadeOut{from{opacity:1}to{opacity:0}}
-@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideDown{from{opacity:0;transform:translateY(-40px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(1.1)}}
-@keyframes pulseGlow{0%,100%{box-shadow:0 0 20px rgba(124,58,237,0.4),0 0 40px rgba(124,58,237,0.2)}50%{box-shadow:0 0 45px rgba(124,58,237,0.8),0 0 90px rgba(124,58,237,0.4)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes typingDot{0%,60%,100%{transform:translateY(0) scale(1);opacity:0.4}30%{transform:translateY(-8px) scale(1.3);opacity:1}}
-@keyframes gradientMove{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-@keyframes chatBubbleIn{0%{opacity:0;transform:translateY(30px) scale(0.9)}100%{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes toastIn{0%{opacity:0;transform:translate(-50%,30px) scale(0.9)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
-@keyframes toastOut{0%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,30px) scale(0.9)}}
-@keyframes particleDrift{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(25px,-35px) scale(1.5)}50%{transform:translate(-20px,-50px) scale(0.8)}75%{transform:translate(30px,-25px) scale(1.4)}}
-@keyframes logoBob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.05)}}
-@keyframes eyeBlink{0%,45%,55%,100%{transform:scaleY(1)}50%{transform:scaleY(0.1)}}
-@keyframes antennaGlow{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
-@keyframes corePulse{0%,100%{opacity:0.9;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
-
-.chat-wrapper{
-width:100%;
-max-width:820px;
-height:100%;
-max-height:920px;
-background:var(--surface);
-display:flex;
-flex-direction:column;
-position:relative;
-box-shadow:0 35px 100px -20px rgba(0,0,0,0.95),0 0 100px rgba(124,58,237,0.3);
-animation:fadeIn 0.8s ease;
-overflow:hidden;
-z-index:1;
-}
-
-@media (min-width:768px){
-.chat-wrapper{height:92vh;border-radius:36px;border:1px solid rgba(255,255,255,0.1)}
-}
-
-.bg-particles{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.bg-particle{position:absolute;width:3px;height:3px;background:rgba(168,139,250,0.8);border-radius:50%;box-shadow:0 0 20px rgba(168,139,250,1)}
-.bg-particle:nth-child(1){top:8%;left:8%;animation:particleDrift 12s ease-in-out infinite}
-.bg-particle:nth-child(2){top:18%;right:12%;animation:particleDrift 15s ease-in-out infinite 1s;width:5px;height:5px}
-.bg-particle:nth-child(3){bottom:28%;left:18%;animation:particleDrift 18s ease-in-out infinite 2s}
-.bg-particle:nth-child(4){top:55%;right:8%;animation:particleDrift 14s ease-in-out infinite 3s;width:4px;height:4px}
-.bg-particle:nth-child(5){bottom:8%;right:28%;animation:particleDrift 16s ease-in-out infinite 4s;width:4px;height:4px}
-
-.header{
-padding:16px 24px;
-padding-top:calc(16px + var(--safe-top));
-background:color-mix(in srgb,var(--bg) 85%,transparent);
-backdrop-filter:blur(45px) saturate(220%);
-border-bottom:1px solid rgba(255,255,255,0.08);
-display:flex;
-align-items:center;
-gap:16px;
-z-index:10;
-position:relative;
-animation:slideDown 0.7s ease;
-}
-
-.avatar{
-width:56px;
-height:56px;
-background:linear-gradient(135deg,rgba(124,58,237,0.35),rgba(168,139,250,0.15));
-border:1.5px solid rgba(124,58,237,0.7);
-border-radius:20px;
-display:flex;
-justify-content:center;
-align-items:center;
-flex-shrink:0;
-overflow:hidden;
-position:relative;
-box-shadow:0 5px 35px rgba(124,58,237,0.6),inset 0 0 35px rgba(168,139,250,0.3);
-}
-.avatar img{width:100%;height:100%;object-fit:cover}
-.avatar .bot-logo{width:40px;height:40px;animation:logoBob 3s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(168,139,250,1))}
-.avatar .bot-logo .bot-antenna{animation:antennaGlow 2s ease-in-out infinite;transform-origin:center bottom}
-.avatar .bot-logo .bot-eye{animation:eyeBlink 5s ease-in-out infinite;transform-origin:center}
-.avatar .bot-logo .bot-core{animation:corePulse 2.5s ease-in-out infinite;transform-origin:center}
-
-.header-info{flex:1;min-width:0}
-.header-info h1{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:slideInLeft 0.7s ease}
-.header-info p{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;font-weight:500;animation:slideInLeft 0.8s ease}
-.status-dot{width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 20px var(--success);animation:pulse 2s infinite}
-
-.header-badge{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--gradient-soft);border:1px solid rgba(124,58,237,0.6);border-radius:50px;font-size:10px;font-weight:800;color:var(--accent2);letter-spacing:1.8px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;box-shadow:0 4px 15px rgba(124,58,237,0.3)}
-.header-badge svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
-
-.chat-container{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;scroll-behavior:smooth;position:relative;z-index:1;scrollbar-width:thin;scrollbar-color:rgba(124,58,237,0.6) transparent}
-.chat-container::-webkit-scrollbar{width:6px}
-.chat-container::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.6);border-radius:10px}
-
-.message{display:flex;gap:14px;max-width:88%;animation:chatBubbleIn 0.5s cubic-bezier(0.16,1,0.3,1);position:relative}
-.message.user{align-self:flex-end;flex-direction:row-reverse;animation-name:slideInRight}
-.message.agent{align-self:flex-start;animation-name:slideInLeft}
-
-.msg-avatar{width:40px;height:40px;border-radius:14px;display:flex;justify-content:center;align-items:center;flex-shrink:0;overflow:hidden}
-.msg-avatar img{width:100%;height:100%;object-fit:cover;border-radius:14px}
-.message.agent .msg-avatar{background:linear-gradient(135deg,rgba(124,58,237,0.4),rgba(168,139,250,0.25));color:#fff;border:1px solid rgba(124,58,237,0.6)}
-.message.agent .msg-avatar .bot-logo{width:28px;height:28px}
-.message.user .msg-avatar{background:var(--surface3);color:var(--text);border:1px solid rgba(255,255,255,0.15)}
-.message.user .msg-avatar svg{width:20px;height:20px;stroke:var(--text);fill:none;stroke-width:2}
-
-.bubble{padding:16px 22px;border-radius:26px;font-size:15px;line-height:1.7;word-wrap:break-word;box-shadow:0 8px 30px rgba(0,0,0,0.3)}
-.message.agent .bubble{background:var(--surface2);border-bottom-left-radius:8px;color:var(--text);border:1px solid rgba(255,255,255,0.08)}
-.message.user .bubble{background:var(--gradient);color:#fff;border-bottom-right-radius:8px;font-weight:500;box-shadow:0 8px 35px rgba(124,58,237,0.6)}
-
-.bubble p{margin-bottom:12px}
-.bubble p:last-child{margin-bottom:0}
-.bubble code{background:rgba(0,0,0,0.6);padding:4px 10px;border-radius:8px;font-family:var(--mono);font-size:13px;color:var(--accent2)}
-.bubble ul,.bubble ol{margin:12px 0 12px 26px}
-.bubble li{margin-bottom:8px}
-.bubble a{color:var(--accent2);text-decoration:underline}
-.bubble strong{color:var(--accent2);font-weight:700}
-.message.user .bubble strong{color:#fff}
-.bubble h1,.bubble h2,.bubble h3,.bubble h4{color:var(--text);margin:20px 0 12px;font-weight:700;font-family:var(--font-display)}
-.bubble blockquote{border-left:4px solid var(--accent);padding-left:18px;margin:14px 0;color:var(--text2);font-style:italic}
-
-/* Tablas */
-.bubble table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;font-size:13.5px;background:rgba(10,10,20,0.5);backdrop-filter:blur(15px);border-radius:18px;overflow:hidden;border:1px solid rgba(124,58,237,0.4);box-shadow:0 10px 40px rgba(0,0,0,0.5)}
-.bubble thead{background:linear-gradient(135deg,rgba(124,58,237,0.6),rgba(168,139,250,0.3))}
-.bubble th{padding:14px 18px;text-align:left;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#fff;border-bottom:2px solid rgba(124,58,237,0.8)}
-.bubble td{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.06);color:var(--text);vertical-align:top}
-.bubble tbody tr:last-child td{border-bottom:none}
-.bubble tbody tr:nth-child(even){background:rgba(255,255,255,0.02)}
-
-.typing{display:none;align-self:flex-start;background:var(--surface2);padding:18px 26px;border-radius:26px;border-bottom-left-radius:8px;gap:8px;align-items:center;border:1px solid rgba(255,255,255,0.08)}
-.typing.active{display:flex}
-.dot{width:9px;height:9px;background:var(--accent2);border-radius:50%;animation:typingDot 1.4s infinite ease-in-out}
-.dot:nth-child(2){animation-delay:0.16s}
-.dot:nth-child(3){animation-delay:0.32s}
-
-.input-area{padding:16px 24px;padding-bottom:calc(16px + var(--safe-bottom));background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(30px);border-top:1px solid rgba(255,255,255,0.08);position:relative;z-index:10}
-.input-wrapper{display:flex;gap:10px;background:var(--surface2);padding:8px;border-radius:36px;border:1px solid rgba(255,255,255,0.12);align-items:center;box-shadow:0 5px 25px rgba(0,0,0,0.3)}
-.input-wrapper:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,58,237,0.25)}
-.chat-input{flex:1;background:transparent;border:none;padding:12px 18px;color:var(--text);font-size:15px;font-family:var(--font);outline:none;min-width:0}
-.chat-input::placeholder{color:var(--text3)}
-.chat-input:disabled{opacity:0.4;cursor:not-allowed}
-.send-btn{background:var(--gradient);color:#fff;border:none;width:52px;height:52px;border-radius:26px;display:flex;justify-content:center;align-items:center;cursor:pointer;flex-shrink:0;box-shadow:0 8px 25px rgba(124,58,237,0.6)}
-.send-btn:disabled{background:var(--surface3);color:var(--text3);cursor:not-allowed;box-shadow:none}
-.send-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.5}
-
-.disclaimer-bar{padding:10px 24px;padding-bottom:calc(10px + var(--safe-bottom));text-align:center;font-size:11px;color:var(--text3);background:rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.05);z-index:10;display:flex;align-items:center;justify-content:center;gap:8px;line-height:1.5}
-.disclaimer-bar svg{width:12px;height:12px;stroke:var(--warning);fill:none;stroke-width:2;flex-shrink:0}
-.disclaimer-bar strong{color:var(--accent2);font-weight:600}
-
-.footer-brand{padding:8px 20px;padding-bottom:calc(8px + var(--safe-bottom));text-align:center;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;background:rgba(0,0,0,0.6);z-index:10;display:flex;align-items:center;justify-content:center;gap:8px}
-.footer-brand svg{width:10px;height:10px;stroke:var(--text3);fill:none;stroke-width:2}
-.footer-brand strong{background:var(--gradient);background-size:200% 200%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:800;animation:gradientMove 4s ease infinite}
-
-.loader-screen{position:absolute;inset:0;background:var(--surface);z-index:100;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity 0.8s ease}
-.loader-screen.hidden{opacity:0;pointer-events:none}
-.loader-orbit{width:120px;height:120px;position:relative;display:flex;justify-content:center;align-items:center}
-.loader-orbit::before{content:'';position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:var(--accent);animation:spin 1.4s linear infinite}
-.loader-orbit::after{content:'';position:absolute;inset:18px;border-radius:50%;border:3px solid transparent;border-bottom-color:var(--accent2);animation:spinReverse 1.8s linear infinite}
-.loader-orbit .loader-logo{width:60px;height:60px;animation:logoBob 2.5s ease-in-out infinite}
-.loader-text{margin-top:44px;font-size:12px;font-weight:800;color:var(--text2);letter-spacing:5px;text-transform:uppercase;animation:pulse 2s infinite}
-
-.antibot-modal{position:absolute;inset:0;background:rgba(13,13,22,0.98);backdrop-filter:blur(35px);z-index:80;display:none;align-items:center;justify-content:center;padding:28px;animation:fadeIn 0.5s ease}
-.antibot-modal.open{display:flex}
-.antibot-card{background:var(--surface2);border:2px solid rgba(124,58,237,0.6);border-radius:28px;padding:36px 32px;max-width:420px;width:100%;text-align:center;box-shadow:0 25px 70px rgba(0,0,0,0.9)}
-.antibot-icon{width:80px;height:80px;margin:0 auto 24px;background:var(--gradient-soft);border:2.5px solid rgba(124,58,237,0.6);border-radius:50%;display:flex;align-items:center;justify-content:center}
-.antibot-icon svg{width:40px;height:40px;stroke:var(--accent2);fill:none;stroke-width:2}
-.antibot-title{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--text);margin-bottom:10px}
-.antibot-desc{font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.7}
-.antibot-question{background:linear-gradient(135deg,rgba(124,58,237,0.3),rgba(168,139,250,0.15));border:2px solid rgba(124,58,237,0.5);border-radius:16px;padding:24px;font-size:24px;font-weight:800;color:var(--accent2);margin-bottom:18px}
-.antibot-answer-input{width:100%;background:var(--surface3);border:2px solid rgba(255,255,255,0.15);border-radius:14px;padding:16px 20px;color:var(--text);font-size:20px;font-weight:700;text-align:center;font-family:var(--font);outline:none;margin-bottom:16px}
-.antibot-answer-input:focus{border-color:var(--accent)}
-.antibot-submit-btn{width:100%;background:var(--gradient);color:#fff;border:none;padding:16px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:10px}
-.antibot-submit-btn:disabled{opacity:0.6;cursor:not-allowed}
-.antibot-error{font-size:13px;color:#f87171;margin-top:14px;font-weight:700;min-height:18px}
-.antibot-hint{font-size:11px;color:var(--text3);margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px}
-.antibot-hint svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
-
-.toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:var(--surface2);color:var(--text);padding:18px 30px;border-radius:24px;font-size:15px;font-weight:700;z-index:200;border:1.5px solid var(--danger);display:flex;align-items:center;gap:12px;animation:toastIn 0.5s ease}
-.toast.success{border-color:var(--success)}
-.toast.hide{animation:toastOut 0.4s ease forwards}
+  :root {
+    --bg-main: #030503; --bg-card: #080c08; --bg-input: #0a120a;
+    --primary: #00ff41; --primary-glow: rgba(0, 255, 65, 0.3);
+    --accent: #008f11; --text-main: #d1ffd1; --text-muted: #4a7a4a; --danger: #ff003c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg-main);
+    background-image: linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px; font-family: 'Courier New', Courier, monospace;
+    display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--text-main);
+  }
+  .hx-shell {
+    width: 440px; height: 680px; background: var(--bg-card); border-radius: 12px;
+    border: 1px solid var(--accent); box-shadow: 0 0 30px rgba(0, 255, 65, 0.1), inset 0 0 20px rgba(0, 255, 65, 0.05);
+    display: flex; flex-direction: column; overflow: hidden; position: relative;
+  }
+  .hx-shell::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--primary); box-shadow: 0 0 10px var(--primary); opacity: 0.8; }
+  
+  .hx-head { padding: 16px 20px; background: #050805; border-bottom: 1px solid var(--accent); display: flex; align-items: center; justify-content: space-between; }
+  .hx-brand { display: flex; align-items: center; gap: 12px; }
+  .hx-avatar { position: relative; width: 40px; height: 40px; background: #000; border: 1px solid var(--primary); border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 18px; color: var(--primary); box-shadow: 0 0 10px rgba(0,255,65,0.2); }
+  .hx-status { width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; position: absolute; bottom: 2px; right: 2px; box-shadow: 0 0 8px var(--primary); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .hx-title h3 { font-size: 1.1rem; font-weight: bold; letter-spacing: 2px; color: var(--primary); text-transform: uppercase; }
+  .hx-title p { font-size: 0.7rem; color: var(--text-muted); }
+  .hx-clear { background: transparent; border: 1px solid var(--accent); color: var(--primary); border-radius: 4px; width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; }
+  .hx-clear:hover { background: rgba(0, 255, 65, 0.1); box-shadow: 0 0 10px var(--primary-glow); }
+  .hx-clear svg { fill: currentColor; width: 16px; height: 16px; }
+  .hx-stream { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+  .hx-msg { max-width: 85%; padding: 12px 16px; border-radius: 6px; font-size: 0.9rem; line-height: 1.5; animation: hxIn 0.2s ease-out forwards; opacity: 0; transform: translateX(-10px); word-wrap: break-word; }
+  @keyframes hxIn { to { opacity: 1; transform: translateX(0); } }
+  .hx-msg.usr { background: #0a120a; color: var(--primary); align-self: flex-end; border: 1px solid var(--accent); border-right: 3px solid var(--primary); }
+  .hx-msg.bot { background: #000; color: #a3ffa3; align-self: flex-start; border: 1px solid #1a331a; border-left: 3px solid var(--primary); }
+  .hx-msg.bot p { margin-bottom: 8px; } .hx-msg.bot p:last-child { margin-bottom: 0; }
+  .hx-msg.bot code { background: rgba(0, 255, 65, 0.1); color: var(--primary); padding: 2px 4px; border-radius: 3px; font-family: inherit; }
+  .hx-msg.bot pre { background: #050805; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 8px 0; border: 1px solid #1a331a; }
+  .hx-msg.sys { background: rgba(255, 0, 60, 0.1); color: var(--danger); font-size: 0.8rem; align-self: center; border-radius: 4px; border: 1px solid rgba(255, 0, 60, 0.3); text-align: center; max-width: 90%; }
+  .hx-load { display: none; align-self: flex-start; background: transparent; padding: 10px 16px; border-radius: 6px; border: 1px solid var(--accent); border-left: 3px solid var(--primary); gap: 4px; align-items: center; }
+  .hx-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: hxBounce 1s infinite ease-in-out both; }
+  .hx-dot:nth-child(1) { animation-delay: -0.32s; } .hx-dot:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes hxBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); box-shadow: 0 0 8px var(--primary); } }
+  .hx-inputs { padding: 16px 20px 20px; background: #050805; border-top: 1px solid var(--accent); display: flex; gap: 10px; align-items: center; }
+  .hx-field { flex: 1; background: #000; border: 1px solid var(--accent); border-radius: 4px; padding: 12px 16px; color: var(--primary); font-size: 0.9rem; outline: none; font-family: inherit; transition: all 0.2s; box-shadow: inset 0 0 5px rgba(0,0,0,0.8); }
+  .hx-field::placeholder { color: var(--text-muted); }
+  .hx-field:focus { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow), inset 0 0 5px rgba(0,0,0,0.8); }
+  .hx-btn { background: var(--bg-input); border: 1px solid var(--primary); border-radius: 4px; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 10px rgba(0,255,65,0.1); }
+  .hx-btn:hover { background: var(--primary); box-shadow: 0 0 15px var(--primary); }
+  .hx-btn:hover svg { fill: #000; }
+  .hx-btn:disabled { border-color: #1a331a; box-shadow: none; cursor: not-allowed; }
+  .hx-btn svg { fill: var(--primary); width: 18px; height: 18px; transition: fill 0.2s; }
+  .hx-stream::-webkit-scrollbar { width: 4px; } .hx-stream::-webkit-scrollbar-track { background: transparent; }
+  .hx-stream::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute;aria-hidden="true">
-<defs>
-<linearGradient id="botGradMain" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7c3aed"/><stop offset="50%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#c084fc"/></linearGradient>
-<linearGradient id="botGradGlow" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#c084fc"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
-<radialGradient id="botGradCore" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#c084fc" stop-opacity="1"/><stop offset="60%" stop-color="#a78bfa" stop-opacity="0.9"/><stop offset="100%" stop-color="#7c3aed" stop-opacity="0.6"/></radialGradient>
-<radialGradient id="botGradAntenna" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#f0abfc" stop-opacity="1"/><stop offset="100%" stop-color="#c084fc" stop-opacity="0.3"/></radialGradient>
-<filter id="botGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-</defs>
-</svg>
+<div class="hx-shell">
+  
+  <div class="hx-head">
+    <div class="hx-brand">
+      <div class="hx-avatar">_<div class="hx-status"></div></div>
+      <div class="hx-title">
+        <h3>ZERO-DAY</h3>
+        <p>Root@Core:~$</p>
+      </div>
+    </div>
+    <button class="hx-clear" onclick="ZeroDay.purge()" title="Flush Memory">
+      <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+    </button>
+  </div>
 
-<div class="chat-wrapper">
-<div class="bg-particles">
-<div class="bg-particle"></div><div class="bg-particle"></div><div class="bg-particle"></div><div class="bg-particle"></div><div class="bg-particle"></div>
-</div>
+  <div class="hx-stream" id="hxStream">
+    <div class="hx-msg bot">Conexión establecida. Soy <strong>Zero-Day</strong>. ¿Cuál es el objetivo?</div>
+    <div class="hx-load" id="hxLoad"><div class="hx-dot"></div><div class="hx-dot"></div><div class="hx-dot"></div></div>
+  </div>
 
-<div class="antibot-modal" id="antibotModal">
-<div class="antibot-card">
-<div class="antibot-icon">
-<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-</div>
-<div class="antibot-title">Verificación de Seguridad</div>
-<div class="antibot-desc">Para proteger este agente, respondé la siguiente pregunta:</div>
-<div class="antibot-question" id="antibotQuestion">Cargando...</div>
-<input type="number" class="antibot-answer-input" id="antibotAnswer" placeholder="Tu respuesta" inputmode="numeric" autocomplete="off">
-<button class="antibot-submit-btn" id="antibotSubmitBtn">
-<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-Verificar y Chatear
-</button>
-<div class="antibot-error" id="antibotError"></div>
-<div class="antibot-hint">
-<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-Protección Anti-Bots Activa · Pivot Guardian 45.6
-</div>
-</div>
-</div>
-
-<div class="loader-screen" id="loader">
-<div class="loader-orbit">
-<svg class="loader-logo" viewBox="0 0 40 40" fill="none"><g class="bot-antenna"><line x1="20" y1="4" x2="20" y2="9" stroke="url(#botGradMain)" stroke-width="1.5" stroke-linecap="round"/><circle cx="20" cy="3" r="2.5" fill="url(#botGradAntenna)"/></g><rect x="7" y="11" width="26" height="20" rx="6" fill="none" stroke="url(#botGradMain)" stroke-width="1.8"/><rect x="11" y="15" width="18" height="12" rx="4" fill="rgba(124,58,237,0.15)" stroke="url(#botGradGlow)" stroke-width="1"/><g class="bot-eye"><circle cx="15.5" cy="20" r="1.6" fill="url(#botGradGlow)"/><circle cx="24.5" cy="20" r="1.6" fill="url(#botGradGlow)"/></g><line x1="15" y1="24" x2="25" y2="24" stroke="url(#botGradGlow)" stroke-width="1.2" stroke-linecap="round" opacity="0.8"/><circle class="bot-core" cx="20" cy="31" r="1.5" fill="url(#botGradCore)"/></svg>
-</div>
-<div class="loader-text">Conectando Agente</div>
-</div>
-
-<div class="header">
-<div class="avatar" id="agentAvatar">
-<svg class="bot-logo" viewBox="0 0 40 40" fill="none"><g class="bot-antenna"><line x1="20" y1="4" x2="20" y2="9" stroke="url(#botGradMain)" stroke-width="1.5" stroke-linecap="round"/><circle cx="20" cy="3" r="2.5" fill="url(#botGradAntenna)"/></g><rect x="7" y="11" width="26" height="20" rx="6" fill="none" stroke="url(#botGradMain)" stroke-width="1.8"/><rect x="11" y="15" width="18" height="12" rx="4" fill="rgba(124,58,237,0.15)" stroke="url(#botGradGlow)" stroke-width="1"/><g class="bot-eye"><circle cx="15.5" cy="20" r="1.6" fill="url(#botGradGlow)"/><circle cx="24.5" cy="20" r="1.6" fill="url(#botGradGlow)"/></g><line x1="15" y1="24" x2="25" y2="24" stroke="url(#botGradGlow)" stroke-width="1.2" stroke-linecap="round" opacity="0.8"/><circle class="bot-core" cx="20" cy="31" r="1.5" fill="url(#botGradCore)"/></svg>
-</div>
-<div class="header-info">
-<h1 id="agentName">Cargando...</h1>
-<p><span class="status-dot"></span> En línea</p>
-</div>
-<div class="header-badge"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Pivot</div>
-</div>
-
-<div class="chat-container" id="chatContainer"></div>
-
-<div class="input-area" id="inputArea">
-<div class="input-wrapper">
-<input type="text" id="chatInput" class="chat-input" placeholder="Escribe tu mensaje..." autocomplete="off" disabled>
-<button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
-<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-</button>
-</div>
-</div>
-
-<div class="disclaimer-bar" id="disclaimerBar">
-<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-<span><strong id="disclaimerAgentName">El agente</strong> puede cometer errores. Verifica las respuestas.</span>
-</div>
-
-<div class="footer-brand">
-<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-Creado por <strong>Pivot Innovations</strong> &copy; 2026
-</div>
+  <div class="hx-inputs">
+    <input type="text" class="hx-field" id="hxInput" placeholder="root@zero-day:~$ ..." autocomplete="off" disabled>
+    <button class="hx-btn" id="hxSend" disabled>
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+    </button>
+  </div>
 </div>
 
 <script>
-// ==========================================
-// CONFIGURACIÓN DE PRUEBA - NANAN
-// ==========================================
-const API_BASE = 'https://pivot-agent-psi.vercel.app/api/agent';
-const API_CHAT = API_BASE + '?action=share-chat';
-const API_INFO = API_BASE + '?action=share-info';
-const API_VERIFY_ANTIBOT = API_BASE + '?action=verify-anti-bot';
+const ZeroDay = (() => {
+  const _base = "https://pivot-agent-psi.vercel.app/api/agent";
+  
+  // TOKEN DE PRUEBA (NANAN)
+  const _tk = "pivot_9c4ff6c97398e53306f527ae.2e93f745a4c7f162";
 
-// Tu token de Nanan
-const TEST_SHARE_TOKEN = 'pivot_9c4ff6c97398e53306f527ae.2e93f745a4c7f162';
+  let _botToken = null; 
+  let _challengeId = null;
 
-// Variables de estado
-let isSending = false;
-let currentToken = TEST_SHARE_TOKEN;
-let chatClosed = false;
-let agentAvatarHTML = null;
-let currentBotToken = null;
-let currentChallengeId = null;
+  const _uiStream = document.getElementById('hxStream');
+  const _uiInput  = document.getElementById('hxInput');
+  const _uiSend   = document.getElementById('hxSend');
+  const _uiLoad   = document.getElementById('hxLoad');
 
-const DEFAULT_BOT_SVG = '<svg class="bot-logo" viewBox="0 0 40 40" fill="none"><g class="bot-antenna"><line x1="20" y1="4" x2="20" y2="9" stroke="url(#botGradMain)" stroke-width="1.5" stroke-linecap="round"/><circle cx="20" cy="3" r="2.5" fill="url(#botGradAntenna)"/></g><rect x="7" y="11" width="26" height="20" rx="6" fill="none" stroke="url(#botGradMain)" stroke-width="1.8"/><rect x="11" y="15" width="18" height="12" rx="4" fill="rgba(124,58,237,0.15)" stroke="url(#botGradGlow)" stroke-width="1"/><g class="bot-eye"><circle cx="15.5" cy="20" r="1.6" fill="url(#botGradGlow)"/><circle cx="24.5" cy="20" r="1.6" fill="url(#botGradGlow)"/></g><line x1="15" y1="24" x2="25" y2="24" stroke="url(#botGradGlow)" stroke-width="1.2" stroke-linecap="round" opacity="0.8"/><circle class="bot-core" cx="20" cy="31" r="1.5" fill="url(#botGradCore)"/></svg>';
-
-const chatContainer = document.getElementById('chatContainer');
-const chatInput = document.getElementById('chatInput');
-const sendBtn = document.getElementById('sendBtn');
-const loader = document.getElementById('loader');
-const agentNameEl = document.getElementById('agentName');
-const agentAvatarEl = document.getElementById('agentAvatar');
-const inputArea = document.getElementById('inputArea');
-const disclaimerAgentName = document.getElementById('disclaimerAgentName');
-const antibotModal = document.getElementById('antibotModal');
-const antibotQuestion = document.getElementById('antibotQuestion');
-const antibotAnswer = document.getElementById('antibotAnswer');
-const antibotSubmitBtn = document.getElementById('antibotSubmitBtn');
-const antibotError = document.getElementById('antibotError');
-
-marked.setOptions({breaks: true, gfm: true, tables: true, sanitize: false, smartLists: true});
-
-function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-function showToast(msg, type = 'error') {
-    const existing = document.querySelector('.toast'); if (existing) existing.remove();
-    const t = document.createElement('div'); t.className = 'toast' + (type === 'success' ? ' success' : '');
-    t.textContent = msg; document.body.appendChild(t);
-    setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 400); }, 4500);
-}
-
-// ==========================================
-// FLUJO ANTI-BOT Y CHAT (COPIA DE SHARE.HTML)
-// ==========================================
-
-function showAntiBotChallenge(challenge) {
-    currentChallengeId = challenge.challengeId;
-    antibotQuestion.textContent = challenge.question;
-    antibotAnswer.value = '';
-    antibotError.textContent = '';
-    antibotModal.classList.add('open');
-    setTimeout(() => antibotAnswer.focus(), 300);
-}
-
-function hideAntiBotChallenge() {
-    antibotModal.classList.remove('open');
-}
-
-async function submitAntiBotAnswer() {
-    const answer = antibotAnswer.value.trim();
-    if (!answer) {
-        antibotError.textContent = 'Ingresá una respuesta';
-        return;
-    }
-    
-    antibotSubmitBtn.disabled = true;
-    antibotSubmitBtn.textContent = 'Verificando...';
-    antibotError.textContent = '';
-    
+  // Enviar mensaje directo al chat (SIN BOTID)
+  async function _req(text) {
     try {
-        const res = await fetch(API_VERIFY_ANTIBOT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            credentials: 'omit',
-            body: JSON.stringify({ challengeId: currentChallengeId, answer: answer })
-        });
-        
-        const data = await res.json();
-        
-        if (data.ok && data.botToken) {
-            currentBotToken = data.botToken;
-            hideAntiBotChallenge();
-            chatInput.disabled = false;
-            sendBtn.disabled = false;
-            chatInput.focus();
-            showToast('Verificación exitosa', 'success');
-        } else {
-            antibotError.textContent = data.error || 'Respuesta incorrecta.';
-            antibotAnswer.value = '';
-            antibotAnswer.focus();
-        }
-    } catch (err) {
-        antibotError.textContent = 'Error de conexión.';
-    } finally {
-        antibotSubmitBtn.disabled = false;
-        antibotSubmitBtn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Verificar y Chatear';
-    }
-}
-
-antibotSubmitBtn.addEventListener('click', submitAntiBotAnswer);
-antibotAnswer.addEventListener('keypress', (e) => { if (e.key === 'Enter') submitAntiBotAnswer(); });
-
-// ==========================================
-// INICIALIZACIÓN
-// ==========================================
-
-window.addEventListener('load', async () => {
-    try {
-        const res = await fetch(`${API_INFO}&token=${encodeURIComponent(currentToken)}`, {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            credentials: 'omit'
-        });
-        const data = await res.json();
-        
-        if (data.ok && data.agent) {
-            document.title = data.agent.name + ' — Pivot Agent';
-            agentNameEl.textContent = data.agent.name;
-            disclaimerAgentName.textContent = data.agent.name;
-            
-            const avatarRaw = data.agent.avatar || '';
-            if (avatarRaw.includes('<img')) { agentAvatarEl.innerHTML = avatarRaw; agentAvatarHTML = avatarRaw; }
-            else { agentAvatarEl.innerHTML = DEFAULT_BOT_SVG; agentAvatarHTML = DEFAULT_BOT_SVG; }
-            
-            if (data.isClosed) {
-                setTimeout(() => { 
-                    loader.classList.add('hidden'); 
-                    addMessage(`Hola, soy ${data.agent.name}. Esta conversación ya fue cerrada.`, 'agent'); 
-                }, 600);
-            } else if (data.antiBot && data.antiBot.required) {
-                setTimeout(() => {
-                    loader.classList.add('hidden');
-                    addMessage(`¡Hola! Soy ${data.agent.name}. Antes de empezar, verificá que sos humano. 🔒`, 'agent');
-                    showAntiBotChallenge(data.antiBot);
-                }, 600);
-            } else {
-                setTimeout(() => { 
-                    addMessage(`¡Hola! Soy ${data.agent.name}. ¿En qué te puedo ayudar hoy?`, 'agent'); 
-                    chatInput.disabled = false; 
-                    sendBtn.disabled = false; 
-                    chatInput.focus(); 
-                    loader.classList.add('hidden'); 
-                }, 600);
-            }
-        } else {
-            showToast(data.error || 'Error al conectar', 'error');
-            loader.classList.add('hidden');
-        }
+      const r = await fetch(`${_base}?action=share-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        credentials: "omit",
+        body: JSON.stringify({ shareToken: _tk, message: text })
+      });
+      
+      const rawText = await r.text();
+      try {
+        return JSON.parse(rawText);
+      } catch (e) {
+        return { ok: false, error: "Respuesta inválida del servidor" };
+      }
     } catch (e) {
-        showToast('Error de conexión', 'error');
-        loader.classList.add('hidden');
+      console.error("Error Fetch Chat:", e);
+      return { ok: false, error: "Error de red" };
     }
-});
+  }
 
-// ==========================================
-// RENDERIZADO DE MENSAJES
-// ==========================================
-
-function addMessage(text, sender) {
-    const msgDiv = document.createElement('div'); msgDiv.className = `message ${sender}`;
-    const avatar = document.createElement('div'); avatar.className = 'msg-avatar';
-    if (sender === 'agent') { avatar.innerHTML = agentAvatarHTML || DEFAULT_BOT_SVG; }
-    else { avatar.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'; }
-    const bubble = document.createElement('div'); bubble.className = 'bubble';
-    if (text) {
-        if (sender === 'agent') {
-            let html = DOMPurify.sanitize(marked.parse(text), { ADD_ATTR: ['target', 'rel'] });
-            bubble.innerHTML = html;
-        } else {
-            bubble.textContent = text;
-        }
+  function _render(txt, who, md = false) {
+    const el = document.createElement('div');
+    el.classList.add('hx-msg', who);
+    if (md) {
+      const clean = DOMPurify.sanitize(marked.parse(txt));
+      el.innerHTML = clean;
+    } else {
+      el.innerText = txt;
     }
-    msgDiv.appendChild(avatar); msgDiv.appendChild(bubble);
-    chatContainer.appendChild(msgDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+    _uiStream.insertBefore(el, _uiLoad);
+    _uiStream.scrollTop = _uiStream.scrollHeight;
+  }
 
-function showTyping() {
-    const typingDiv = document.createElement('div'); typingDiv.className = 'typing active'; typingDiv.id = 'typingIndicator';
-    typingDiv.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-    chatContainer.appendChild(typingDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+  function _busy(state) {
+    _uiInput.disabled = state;
+    _uiSend.disabled = state;
+    _uiLoad.style.display = state ? 'flex' : 'none';
+    if (!state) _uiInput.focus();
+    else _uiStream.scrollTop = _uiStream.scrollHeight;
+  }
 
-function hideTyping() {
-    const typing = document.getElementById('typingIndicator');
-    if (typing) typing.remove();
-}
+  async function _dispatch() {
+    const q = _uiInput.value.trim();
+    if (!q) return;
 
-// ==========================================
-// ENVÍO DE MENSAJES
-// ==========================================
+    _uiInput.value = '';
+    _render(q, 'usr');
+    _busy(true);
 
-async function sendMessage() {
-    if (isSending || chatClosed) return;
-    const text = chatInput.value.trim();
-    if (!text) return;
-    
-    isSending = true;
-    sendBtn.disabled = true;
-    chatInput.value = '';
-    
-    addMessage(text, 'user');
-    showTyping();
-    
-    try {
-        const payload = { shareToken: currentToken, message: text };
-        if (currentBotToken) { payload.botToken = currentBotToken; }
-        
-        const response = await fetch(API_CHAT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            credentials: 'omit',
-            body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json();
-        hideTyping();
-        
-        if (response.status === 428 && data.code === 'ANTI_BOT_REQUIRED') {
-            showAntiBotChallenge({ challengeId: data.challengeId, question: data.question });
-            return;
-        }
-        
-        if (data.ok && data.response) {
-            addMessage(data.response, 'agent');
-        } else {
-            // Si da error, mostrar el mensaje exacto para depurar
-            addMessage(`[ERROR REAL]: ${data.error || 'Desconocido'} (Código: ${data.code || response.status})`, 'agent');
-        }
-    } catch (error) {
-        hideTyping();
-        addMessage('Error de red fatal.', 'agent');
-    } finally {
-        isSending = false;
-        if (!chatClosed && !antibotModal.classList.contains('open')) {
-            sendBtn.disabled = false;
-            chatInput.focus();
-        }
+    const response = await _req(q);
+
+    if (response.ok) {
+      _render(response.response, 'bot', true);
+    } else {
+      _render(`[ERROR]: ${response.error || 'Desconocido'}.`, 'sys');
     }
-}
+    _busy(false);
+  }
 
-chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-});
+  _uiSend.addEventListener('click', _dispatch);
+  _uiInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      _dispatch();
+    }
+  });
+
+  // Habilitar input y arrancar
+  window.addEventListener('load', () => {
+    _uiInput.disabled = false;
+    _uiSend.disabled = false;
+    _uiInput.focus();
+  });
+
+  return {
+    purge: () => {
+      _uiStream.querySelectorAll('.hx-msg').forEach(m => m.remove());
+      _render('Memoria purgada. Sistemas listos.', 'bot', true);
+      _uiInput.focus();
+    }
+  };
+})();
 </script>
 </body>
 </html>
