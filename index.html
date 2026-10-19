@@ -408,7 +408,8 @@ Esta página es solo para testing del endpoint con <code>agentId: pivot_3257aaf9
 </div>
 
 <script>
-const API_URL='/api/agent/v1/chat/completions';
+// Usamos la URL absoluta para evitar problemas si el HTML está en otro dominio (como vercel)
+const API_URL='https://pivot-agent-psi.vercel.app/api/agent/v1/chat/completions'; 
 const API_KEY='pk_24f352027c709a7f6e657e10ae4449c5d4a9230ac60f3b24bf7b93b9ec97062a';
 const AGENT_ID='pivot_3257aaf92b2c54177c16f23e';
 
@@ -528,12 +529,18 @@ messages:history
 const elapsed=Date.now()-start;
 hideTyping();
 if(!res.ok){
+// SOLUCIÓN: Leer la respuesta del error UNA SOLA VEZ.
 let errText='';
 try{
-const errJson=await res.json();
+const clonedRes = res.clone(); // Clonamos por si acaso
+const errJson=await clonedRes.json();
 errText=errJson.error||JSON.stringify(errJson);
 }catch(e){
-errText=await res.text();
+try {
+errText = await res.text(); // Si no es JSON, leemos como texto
+} catch(e2) {
+errText = "No se pudo leer el cuerpo del error.";
+}
 }
 appendSystem('❌ Error HTTP '+res.status+'<br><br>'+escapeHtml(errText||'Sin detalle'),'error');
 document.getElementById('statusText').textContent='ERROR '+res.status;
