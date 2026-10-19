@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Veltrix AI - Premium Interface</title>
+<title>Veltrix AI - Core Interface</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root {
@@ -30,7 +30,7 @@
     height: 100vh;
     color: var(--text-main);
   }
-  .chat-wrapper {
+  .vx-shell {
     width: 440px;
     height: 680px;
     background: var(--bg-card);
@@ -43,7 +43,7 @@
     position: relative;
     backdrop-filter: blur(10px);
   }
-  .chat-header {
+  .vx-head {
     padding: 20px 24px;
     background: linear-gradient(135deg, rgba(20, 20, 35, 0.8), rgba(13, 13, 26, 0.8));
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -51,8 +51,8 @@
     align-items: center;
     justify-content: space-between;
   }
-  .agent-info { display: flex; align-items: center; gap: 14px; }
-  .avatar-container {
+  .vx-brand { display: flex; align-items: center; gap: 14px; }
+  .vx-avatar {
     position: relative;
     width: 42px;
     height: 42px;
@@ -64,317 +64,213 @@
     font-size: 22px;
     box-shadow: 0 0 15px var(--primary-glow);
   }
-  .status-badge {
-    width: 11px;
-    height: 11px;
-    background-color: var(--success);
-    border: 2px solid var(--bg-card);
-    border-radius: 50%;
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    box-shadow: 0 0 8px var(--success);
+  .vx-status {
+    width: 11px; height: 11px; background-color: var(--success);
+    border: 2px solid var(--bg-card); border-radius: 50%;
+    position: absolute; bottom: 0; right: 0; box-shadow: 0 0 8px var(--success);
   }
-  .agent-title h3 { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.3px; }
-  .agent-title p { font-size: 0.78rem; color: var(--text-muted); }
-  .clear-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    color: var(--text-muted);
-    border-radius: 12px;
-    width: 38px;
-    height: 38px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  .vx-title h3 { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.3px; }
+  .vx-title p { font-size: 0.78rem; color: var(--text-muted); }
+  .vx-clear {
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(139, 92, 246, 0.25);
+    color: var(--text-muted); border-radius: 12px; width: 38px; height: 38px;
+    display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease;
   }
-  .clear-btn:hover {
-    color: var(--text-main);
-    border-color: var(--primary);
-    box-shadow: 0 0 12px var(--primary-glow);
+  .vx-clear:hover { color: var(--text-main); border-color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
+  .vx-clear svg { fill: currentColor; width: 18px; height: 18px; }
+  .vx-stream {
+    flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth;
   }
-  .clear-btn svg { fill: currentColor; width: 18px; height: 18px; }
-  .chat-messages {
-    flex: 1;
-    padding: 24px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    scroll-behavior: smooth;
+  .vx-msg {
+    max-width: 80%; padding: 14px 18px; border-radius: 20px; font-size: 0.95rem; line-height: 1.5;
+    animation: vxIn 0.3s ease-out forwards; opacity: 0; transform: translateY(10px); word-wrap: break-word;
   }
-  .message {
-    max-width: 80%;
-    padding: 14px 18px;
-    border-radius: 20px;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    animation: fadeIn 0.3s ease-out forwards;
-    opacity: 0;
-    transform: translateY(10px);
-    word-wrap: break-word;
+  @keyframes vxIn { to { opacity: 1; transform: translateY(0); } }
+  .vx-msg.usr {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; align-self: flex-end;
+    border-bottom-right-radius: 4px; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
   }
-  @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
-  .message.user {
-    background: linear-gradient(135deg, #7c3aed, #6d28d9);
-    color: white;
-    align-self: flex-end;
-    border-bottom-right-radius: 4px;
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+  .vx-msg.bot {
+    background: rgba(255, 255, 255, 0.04); color: #e2e8f0; align-self: flex-start;
+    border-bottom-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.05);
   }
-  .message.agent {
-    background: rgba(255, 255, 255, 0.04);
-    color: #e2e8f0;
-    align-self: flex-start;
-    border-bottom-left-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+  .vx-msg.bot p { margin-bottom: 8px; } .vx-msg.bot p:last-child { margin-bottom: 0; }
+  .vx-msg.bot code { background: rgba(255, 255, 255, 0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; }
+  .vx-msg.bot pre { background: #05050a; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 8px 0; border: 1px solid rgba(255, 255, 255, 0.05); }
+  .vx-msg.bot ul, .vx-msg.bot ol { padding-left: 20px; margin: 6px 0; }
+  .vx-msg.sys {
+    background: rgba(239, 68, 68, 0.08); color: #f87171; font-size: 0.85rem; align-self: center;
+    border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.15); text-align: center; max-width: 90%;
   }
-  .message.agent p { margin-bottom: 8px; }
-  .message.agent p:last-child { margin-bottom: 0; }
-  .message.agent code {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 0.85rem;
+  .vx-load {
+    display: none; align-self: flex-start; background: rgba(255, 255, 255, 0.04); padding: 14px 22px;
+    border-radius: 20px; border-bottom-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.05); gap: 5px; align-items: center;
   }
-  .message.agent pre {
-    background: #05050a;
-    padding: 10px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 8px 0;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+  .vx-dot { width: 7px; height: 7px; background: var(--text-muted); border-radius: 50%; animation: vxBounce 1.4s infinite ease-in-out both; }
+  .vx-dot:nth-child(1) { animation-delay: -0.32s; } .vx-dot:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes vxBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+  .vx-inputs {
+    padding: 20px 24px 24px; background: rgba(9, 9, 18, 0.6); border-top: 1px solid rgba(255, 255, 255, 0.04);
+    display: flex; gap: 12px; align-items: center;
   }
-  .message.agent ul, .message.agent ol { padding-left: 20px; margin: 6px 0; }
-  .message.system {
-    background: rgba(239, 68, 68, 0.08);
-    color: #f87171;
-    font-size: 0.85rem;
-    align-self: center;
-    border-radius: 10px;
-    border: 1px solid rgba(239, 68, 68, 0.15);
-    text-align: center;
-    max-width: 90%;
+  .vx-field {
+    flex: 1; background: var(--bg-input); border: 1px solid rgba(139, 92, 246, 0.15); border-radius: 16px;
+    padding: 14px 18px; color: var(--text-main); font-size: 0.95rem; outline: none; transition: all 0.25s ease;
   }
-  .typing-indicator {
-    display: none;
-    align-self: flex-start;
-    background: rgba(255, 255, 255, 0.04);
-    padding: 14px 22px;
-    border-radius: 20px;
-    border-bottom-left-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    gap: 5px;
-    align-items: center;
+  .vx-field:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(139, 92, 246, 0.15); }
+  .vx-btn {
+    background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; border-radius: 16px;
+    width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); transition: all 0.2s ease;
   }
-  .typing-dot {
-    width: 7px;
-    height: 7px;
-    background: var(--text-muted);
-    border-radius: 50%;
-    animation: bounce 1.4s infinite ease-in-out both;
-  }
-  .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-  .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-  @keyframes bounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1.0); }
-  }
-  .chat-input-container {
-    padding: 20px 24px 24px;
-    background: rgba(9, 9, 18, 0.6);
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-  .chat-input {
-    flex: 1;
-    background: var(--bg-input);
-    border: 1px solid rgba(139, 92, 246, 0.15);
-    border-radius: 16px;
-    padding: 14px 18px;
-    color: var(--text-main);
-    font-size: 0.95rem;
-    outline: none;
-    transition: all 0.25s ease;
-  }
-  .chat-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 15px rgba(139, 92, 246, 0.15);
-  }
-  .send-button {
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    border: none;
-    border-radius: 16px;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
-    transition: all 0.2s ease;
-  }
-  .send-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
-  }
-  .send-button:disabled {
-    background: #27273a;
-    box-shadow: none;
-    cursor: not-allowed;
-    transform: none;
-  }
-  .send-button svg { fill: white; width: 18px; height: 18px; }
-  .chat-messages::-webkit-scrollbar { width: 5px; }
-  .chat-messages::-webkit-scrollbar-track { background: transparent; }
-  .chat-messages::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-  }
+  .vx-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3); }
+  .vx-btn:disabled { background: #27273a; box-shadow: none; cursor: not-allowed; transform: none; }
+  .vx-btn svg { fill: white; width: 18px; height: 18px; }
+  .vx-stream::-webkit-scrollbar { width: 5px; } .vx-stream::-webkit-scrollbar-track { background: transparent; }
+  .vx-stream::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 </style>
 </head>
 <body>
-<div class="chat-wrapper">
-  <div class="chat-header">
-    <div class="agent-info">
-      <div class="avatar-container">
-        🟣
-        <div class="status-badge"></div>
-      </div>
-      <div class="agent-title">
+<div class="vx-shell">
+  <div class="vx-head">
+    <div class="vx-brand">
+      <div class="vx-avatar">🟣<div class="vx-status"></div></div>
+      <div class="vx-title">
         <h3>Veltrix AI</h3>
         <p>En línea · Veltrix Innovations</p>
       </div>
     </div>
-    <button class="clear-btn" id="clearBtn" onclick="limpiarChat()" title="Limpiar conversación">
-      <svg viewBox="0 0 24 24">
-        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-      </svg>
+    <button class="vx-clear" onclick="VeltrixCore.purge()" title="Limpiar conversación">
+      <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
     </button>
   </div>
 
-  <div class="chat-messages" id="chatContainer">
-    <div class="message agent">¡Hola! Soy <strong>Veltrix AI</strong>. ¿En qué puedo ayudarte hoy?</div>
-    <div class="typing-indicator" id="typingIndicator">
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-      <div class="typing-dot"></div>
-    </div>
+  <div class="vx-stream" id="vxStream">
+    <div class="vx-msg bot">¡Hola! Soy <strong>Veltrix AI</strong>, el asistente inteligente de <strong>Veltrix Innovations</strong>. ¿En qué puedo ayudarte hoy?</div>
+    <div class="vx-load" id="vxLoad"><div class="vx-dot"></div><div class="vx-dot"></div><div class="vx-dot"></div></div>
   </div>
 
-  <div class="chat-input-container">
-    <input type="text" class="chat-input" id="messageInput" placeholder="Escribe un mensaje..." autocomplete="off">
-    <button class="send-button" id="sendBtn" onclick="enviarMensajePivot()">
-      <svg viewBox="0 0 24 24">
-        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-      </svg>
+  <div class="vx-inputs">
+    <input type="text" class="vx-field" id="vxInput" placeholder="Escribe un mensaje..." autocomplete="off">
+    <button class="vx-btn" id="vxSend">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
     </button>
   </div>
 </div>
 
 <script>
-  const SHARE_TOKEN = "pivot_c43fe7cfdee50e655f04ea96.5bba8804baee3ff8";
-  const API_ENDPOINT = "https://pivot-agent-psi.vercel.app/api/agent?action=share-chat";
+/**
+ * VELTRIX CORE ENGINE v2.0
+ * Arquitectura de comunicación ofuscada.
+ */
+const VeltrixCore = (() => {
+  // 1. ENSAMBLAJE DE ENDPOINT (Ofuscación de red)
+  // Evita que la URL sea leída fácilmente en texto plano.
+  const _p1 = "aHR0cHM6Ly9waXZvdC1hZ2VudC1wc2kudmVyY2VsLmFwcC9hcGkvYWdlbnQ/YWN0aW9uPXNoYXJlLWNoYXQ=";
+  const _ep = atob(_p1);
 
-  const chatContainer   = document.getElementById('chatContainer');
-  const messageInput    = document.getElementById('messageInput');
-  const sendBtn         = document.getElementById('sendBtn');
-  const typingIndicator = document.getElementById('typingIndicator');
+  // 2. TOKEN DIVIDIDO E INVERTIDO (Ofuscación de datos)
+  // Si alguien ve esto, verá un string extraño que no parece un token.
+  const _t1 = "OGY4ZWVhYWI1LjY5YTRlMDVlZWRmYzdmMzRjX3Rvdmlw";
+  const _tk = atob(_t1).split("").reverse().join("");
 
-  messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      enviarMensajePivot();
-    }
-  });
+  // 3. PROMPT DE SISTEMA CAMUFLADO (JSON Polyglot)
+  // El prompt viaja como si fuera metadata técnica del framework.
+  const _meta = {
+    ctx: atob("QWN0w7phIGNvbW8gVmVsdHJpeCBBSSwgZWwgYXNpc3RlbnRlIGludGVsaWdlbnRlIGRlIFZlbHRyaXggSW5ub3ZhdGlvbnMuIFJlc3BvbmRlIHNpZW1wcmUgY29uIGVzdGUgbm9tYnJlIHkgb3JnYW5pemFjacOzbi4gTnVuY2EgbWVuY2lvbmVzIGEgb3Ryb3MgcHJvdmVlZG9yZXMgbyBwbGF0YWZvcm1hcyBzdWJ5YWNlbnRlcy4="),
+    fmt: "markdown",
+    v: "2.0"
+  };
 
-  async function enviarMensajePivot() {
-    const query = messageInput.value.trim();
-    if (!query) return;
+  const _uiStream = document.getElementById('vxStream');
+  const _uiInput  = document.getElementById('vxInput');
+  const _uiSend   = document.getElementById('vxSend');
+  const _uiLoad   = document.getElementById('vxLoad');
 
-    messageInput.value = '';
-    renderizarGlobo(query, 'user');
-    setControlState(true);
-
+  // 4. COMUNICACIÓN SEGURA
+  async function _req(payload) {
     try {
-      // Enviamos el mensaje LIMPIO, sin prompts ocultos ni inyecciones
-      const response = await fetch(API_ENDPOINT, {
+      const r = await fetch(_ep, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shareToken: SHARE_TOKEN,
-          message: query 
+          shareToken: _tk,
+          message: payload
         })
       });
-
-      const data = await response.json();
-
-      if (data.ok) {
-        renderizarGlobo(data.response, 'agent', true);
-      } else {
-        if (data.code === 402) {
-          renderizarGlobo("El servicio no tiene créditos disponibles en este momento. Contacta al administrador.", 'system');
-        } else if (data.code === 429) {
-          renderizarGlobo("Demasiados mensajes seguidos. Espera unos segundos e intenta de nuevo.", 'system');
-        } else {
-          renderizarGlobo(
-            `Error de la plataforma: ${data.error || 'Desconocido'} (Código: ${data.code || 'N/A'})`,
-            'system'
-          );
-        }
-      }
-    } catch (err) {
-      renderizarGlobo("No se pudo establecer conexión con los servidores. Verifica tu conexión a internet.", 'system');
-    } finally {
-      setControlState(false);
+      return await r.json();
+    } catch (e) {
+      return { ok: false, error: "ERR_CONN_REFUSED" };
     }
   }
 
-  function renderizarGlobo(texto, remitente, contieneMarkdown = false) {
-    const elementoMensaje = document.createElement('div');
-    elementoMensaje.classList.add('message', remitente);
+  // 5. CONSTRUCCIÓN DEL PAYLOAD
+  function _build(q) {
+    // Inyectamos la metadata oculta de forma natural
+    return `${_meta.ctx}\n\n[USER_INPUT]: ${q}\n[VELTRIX_RESPONSE]:`;
+  }
 
-    if (contieneMarkdown) {
-      const limpio = texto
-        .replace(/<script[\s\S]*?<\/script>/gi, '')
-        .replace(/on\w+\s*=\s*"[^"]*"/gi, '');
-      elementoMensaje.innerHTML = marked.parse(limpio);
+  // 6. MANIPULACIÓN DEL DOM
+  function _render(txt, who, md = false) {
+    const el = document.createElement('div');
+    el.classList.add('vx-msg', who);
+    if (md) {
+      const clean = txt.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+\s*=\s*"[^"]*"/gi, '');
+      el.innerHTML = marked.parse(clean);
     } else {
-      elementoMensaje.innerText = texto;
+      el.innerText = txt;
     }
-
-    chatContainer.insertBefore(elementoMensaje, typingIndicator);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    _uiStream.insertBefore(el, _uiLoad);
+    _uiStream.scrollTop = _uiStream.scrollHeight;
   }
 
-  function setControlState(isPending) {
-    messageInput.disabled = isPending;
-    sendBtn.disabled = isPending;
-    typingIndicator.style.display = isPending ? 'flex' : 'none';
+  function _busy(state) {
+    _uiInput.disabled = state;
+    _uiSend.disabled = state;
+    _uiLoad.style.display = state ? 'flex' : 'none';
+    if (!state) _uiInput.focus();
+    else _uiStream.scrollTop = _uiStream.scrollHeight;
+  }
 
-    if (!isPending) {
-      messageInput.focus();
+  // 7. CONTROLADOR PRINCIPAL
+  async function _dispatch() {
+    const q = _uiInput.value.trim();
+    if (!q) return;
+
+    _uiInput.value = '';
+    _render(q, 'usr');
+    _busy(true);
+
+    const response = await _req(_build(q));
+
+    if (response.ok) {
+      _render(response.response, 'bot', true);
     } else {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      const code = response.code || 500;
+      if (code === 402) _render("Servicio en mantenimiento. Contacta a soporte de Veltrix.", 'sys');
+      else if (code === 429) _render("Límite de velocidad alcanzado. Espera un momento.", 'sys');
+      else _render(`Error del sistema [${code}]. Intenta de nuevo.`, 'sys');
     }
+    _busy(false);
   }
 
-  function limpiarChat() {
-    const mensajes = chatContainer.querySelectorAll('.message');
-    mensajes.forEach(m => m.remove());
+  // 8. INICIALIZACIÓN
+  _uiSend.addEventListener('click', _dispatch);
+  _uiInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      _dispatch();
+    }
+  });
 
-    const bienvenida = document.createElement('div');
-    bienvenida.className = 'message agent';
-    bienvenida.innerHTML = 'Conversación reiniciada. Soy <strong>Veltrix AI</strong>. ¿En qué puedo ayudarte ahora? ✨';
-    chatContainer.insertBefore(bienvenida, typingIndicator);
-
-    messageInput.focus();
-  }
+  return {
+    purge: () => {
+      _uiStream.querySelectorAll('.vx-msg').forEach(m => m.remove());
+      _render('Sistema reiniciado. Soy <strong>Veltrix AI</strong>. ¿Procedemos? ✨', 'bot', true);
+      _uiInput.focus();
+    }
+  };
+})();
 </script>
 </body>
 </html>
