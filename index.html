@@ -338,7 +338,7 @@ text-align:center;
 <div class="brand-icon">⚡</div>
 <div class="brand-text">
 <h1>PIVOT AGENT · API PLAYGROUND</h1>
-<p>Conectando vía ?action=chat</p>
+<p>v1/chat/completions</p>
 </div>
 </div>
 <div class="status-badge">
@@ -370,7 +370,7 @@ text-align:center;
 </div>
 <div class="config-tag">
 <strong>ENDPOINT</strong>
-<span class="val" id="cfgEndpoint">/api/agent?action=chat</span>
+<span class="val" id="cfgEndpoint">/v1/chat/completions</span>
 </div>
 </div>
 
@@ -378,7 +378,7 @@ text-align:center;
 <div class="msg system">
 <div class="system-bubble">
 🤖 Pivot Agent API conectado · Esperando primer mensaje<br>
-Usando endpoint: <code style="background:rgba(124,58,237,0.2);padding:1px 5px;border-radius:3px;color:#c4b5fd;">/api/agent?action=chat</code>
+Usando endpoint: <code style="background:rgba(124,58,237,0.2);padding:1px 5px;border-radius:3px;color:#c4b5fd;">/v1/chat/completions</code>
 </div>
 </div>
 </div>
@@ -407,8 +407,8 @@ Prueba directa con tu API Key · <strong>No expongas esta key en producción pú
 </div>
 
 <script>
-// Endpoint correcto mapeando la API Key a la acción de chat del backend
-const API_URL = 'https://pivot-agent-psi.vercel.app/api/agent?action=chat';
+// Usamos la ruta oficial para API Keys, ya que arreglamos el vercel.json
+const API_URL = 'https://pivot-agent-psi.vercel.app/v1/chat/completions';
 const API_KEY = 'pk_24f352027c709a7f6e657e10ae4449c5d4a9230ac60f3b24bf7b93b9ec97062a';
 const AGENT_ID = 'pivot_3257aaf92b2c54177c16f23e';
 
@@ -507,8 +507,7 @@ input.disabled=true;
 document.getElementById('statusText').textContent='ENVIANDO...';
 appendMsg('user',msg);
 
-// Importante: como usamos ?action=chat, el agente recordará el historial 
-// que le enviemos en el body. Formateamos el historial para la API.
+// Preparamos el body EXACTO que espera la API compatible con OpenAI
 history.push({role:'user',content:msg});
 const apiHistory = history.map(h => ({
     role: h.role === 'assistant' ? 'assistant' : 'user',
@@ -529,8 +528,8 @@ try {
         },
         body: JSON.stringify({
             agentId: AGENT_ID,
-            message: msg,
-            history: apiHistory
+            model: 'pivot-agent',
+            messages: apiHistory
         })
     });
 
@@ -554,13 +553,18 @@ try {
     }
 
     const data = await res.json();
-    // El backend ?action=chat devuelve { ok: true, response: "..." }
-    const reply = data.response || '(Sin respuesta del agente)';
+    // La API de OpenAI devuelve { choices: [ { message: { content: "..." } } ] }
+    const reply = data.choices?.[0]?.message?.content || '(Sin respuesta del agente)';
     
     history.push({role:'assistant',content:reply});
     appendMsg('agent',reply);
     
-    appendSystem('✅ <strong>'+res.status+' OK</strong> · '+elapsed+'ms','success');
+    const usage = data.usage || {};
+    appendSystem(
+        '✅ <strong>'+res.status+' OK</strong> · '+elapsed+'ms · '+
+        'Tokens: '+(usage.prompt_tokens||0)+' in / '+(usage.completion_tokens||0)+' out',
+        'success'
+    );
     document.getElementById('statusText').textContent='LISTO';
 } catch(err) {
     hideTyping();
