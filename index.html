@@ -3,156 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Veltrix AI - Core Interface</title>
+<title>ZERO-DAY // Core Access</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root {
-    --bg-main: #06060c;
-    --bg-card: #0d0d1a;
-    --bg-input: #121224;
-    --primary: #8b5cf6;
-    --primary-glow: rgba(139, 92, 246, 0.4);
-    --accent: #c084fc;
-    --text-main: #f1f5f9;
-    --text-muted: #64748b;
-    --success: #10b981;
+    --bg-main: #030503; --bg-card: #080c08; --bg-input: #0a120a;
+    --primary: #00ff41; --primary-glow: rgba(0, 255, 65, 0.3);
+    --accent: #008f11; --text-main: #d1ffd1; --text-muted: #4a7a4a; --danger: #ff003c;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background-color: var(--bg-main);
-    background-image:
-      radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.05) 0px, transparent 50%);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    color: var(--text-main);
+    background-image: linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px; font-family: 'Courier New', Courier, monospace;
+    display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--text-main);
   }
-  .vx-shell {
-    width: 440px;
-    height: 680px;
-    background: var(--bg-card);
-    border-radius: 28px;
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px -10px var(--primary-glow);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-    backdrop-filter: blur(10px);
+  .hx-shell {
+    width: 440px; height: 680px; background: var(--bg-card); border-radius: 12px;
+    border: 1px solid var(--accent); box-shadow: 0 0 30px rgba(0, 255, 65, 0.1), inset 0 0 20px rgba(0, 255, 65, 0.05);
+    display: flex; flex-direction: column; overflow: hidden; position: relative;
   }
-  .vx-head {
-    padding: 20px 24px;
-    background: linear-gradient(135deg, rgba(20, 20, 35, 0.8), rgba(13, 13, 26, 0.8));
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .hx-shell::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--primary); box-shadow: 0 0 10px var(--primary); opacity: 0.8; }
+  
+  /* PANTALLA DE VERIFICACIÓN */
+  #authScreen {
+    position: absolute; inset: 0; background: rgba(8, 12, 8, 0.95); z-index: 10;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; text-align: center;
   }
-  .vx-brand { display: flex; align-items: center; gap: 14px; }
-  .vx-avatar {
-    position: relative;
-    width: 42px;
-    height: 42px;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 22px;
-    box-shadow: 0 0 15px var(--primary-glow);
+  #authScreen h2 { color: var(--primary); margin-bottom: 10px; font-size: 1.2rem; }
+  #authScreen p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; }
+  #mathQuestion { font-size: 1.5rem; font-weight: bold; margin: 15px 0; color: var(--text-main); letter-spacing: 2px; }
+  #mathAnswer {
+    background: #000; border: 1px solid var(--primary); color: var(--primary); padding: 10px;
+    font-size: 1.2rem; text-align: center; width: 100px; outline: none; font-family: inherit;
   }
-  .vx-status {
-    width: 11px; height: 11px; background-color: var(--success);
-    border: 2px solid var(--bg-card); border-radius: 50%;
-    position: absolute; bottom: 0; right: 0; box-shadow: 0 0 8px var(--success);
+  #verifyBtn {
+    margin-top: 20px; background: var(--primary); color: #000; border: none; padding: 12px 24px;
+    font-weight: bold; font-family: inherit; cursor: pointer; border-radius: 4px; transition: all 0.2s;
   }
-  .vx-title h3 { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.3px; }
-  .vx-title p { font-size: 0.78rem; color: var(--text-muted); }
-  .vx-clear {
-    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(139, 92, 246, 0.25);
-    color: var(--text-muted); border-radius: 12px; width: 38px; height: 38px;
-    display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease;
-  }
-  .vx-clear:hover { color: var(--text-main); border-color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
-  .vx-clear svg { fill: currentColor; width: 18px; height: 18px; }
-  .vx-stream {
-    flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth;
-  }
-  .vx-msg {
-    max-width: 80%; padding: 14px 18px; border-radius: 20px; font-size: 0.95rem; line-height: 1.5;
-    animation: vxIn 0.3s ease-out forwards; opacity: 0; transform: translateY(10px); word-wrap: break-word;
-  }
-  @keyframes vxIn { to { opacity: 1; transform: translateY(0); } }
-  .vx-msg.usr {
-    background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; align-self: flex-end;
-    border-bottom-right-radius: 4px; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-  }
-  .vx-msg.bot {
-    background: rgba(255, 255, 255, 0.04); color: #e2e8f0; align-self: flex-start;
-    border-bottom-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-  .vx-msg.bot p { margin-bottom: 8px; } .vx-msg.bot p:last-child { margin-bottom: 0; }
-  .vx-msg.bot code { background: rgba(255, 255, 255, 0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; }
-  .vx-msg.bot pre { background: #05050a; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 8px 0; border: 1px solid rgba(255, 255, 255, 0.05); }
-  .vx-msg.bot ul, .vx-msg.bot ol { padding-left: 20px; margin: 6px 0; }
-  .vx-msg.sys {
-    background: rgba(239, 68, 68, 0.08); color: #f87171; font-size: 0.85rem; align-self: center;
-    border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.15); text-align: center; max-width: 90%;
-  }
-  .vx-load {
-    display: none; align-self: flex-start; background: rgba(255, 255, 255, 0.04); padding: 14px 22px;
-    border-radius: 20px; border-bottom-left-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.05); gap: 5px; align-items: center;
-  }
-  .vx-dot { width: 7px; height: 7px; background: var(--text-muted); border-radius: 50%; animation: vxBounce 1.4s infinite ease-in-out both; }
-  .vx-dot:nth-child(1) { animation-delay: -0.32s; } .vx-dot:nth-child(2) { animation-delay: -0.16s; }
-  @keyframes vxBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
-  .vx-inputs {
-    padding: 20px 24px 24px; background: rgba(9, 9, 18, 0.6); border-top: 1px solid rgba(255, 255, 255, 0.04);
-    display: flex; gap: 12px; align-items: center;
-  }
-  .vx-field {
-    flex: 1; background: var(--bg-input); border: 1px solid rgba(139, 92, 246, 0.15); border-radius: 16px;
-    padding: 14px 18px; color: var(--text-main); font-size: 0.95rem; outline: none; transition: all 0.25s ease;
-  }
-  .vx-field:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(139, 92, 246, 0.15); }
-  .vx-btn {
-    background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; border-radius: 16px;
-    width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; cursor: pointer;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); transition: all 0.2s ease;
-  }
-  .vx-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3); }
-  .vx-btn:disabled { background: #27273a; box-shadow: none; cursor: not-allowed; transform: none; }
-  .vx-btn svg { fill: white; width: 18px; height: 18px; }
-  .vx-stream::-webkit-scrollbar { width: 5px; } .vx-stream::-webkit-scrollbar-track { background: transparent; }
-  .vx-stream::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+  #verifyBtn:hover { background: #fff; box-shadow: 0 0 15px var(--primary); }
+  #authError { color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none; }
+
+  .hx-head { padding: 16px 20px; background: #050805; border-bottom: 1px solid var(--accent); display: flex; align-items: center; justify-content: space-between; }
+  .hx-brand { display: flex; align-items: center; gap: 12px; }
+  .hx-avatar { position: relative; width: 40px; height: 40px; background: #000; border: 1px solid var(--primary); border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 18px; color: var(--primary); box-shadow: 0 0 10px rgba(0,255,65,0.2); }
+  .hx-status { width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; position: absolute; bottom: 2px; right: 2px; box-shadow: 0 0 8px var(--primary); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .hx-title h3 { font-size: 1.1rem; font-weight: bold; letter-spacing: 2px; color: var(--primary); text-transform: uppercase; }
+  .hx-title p { font-size: 0.7rem; color: var(--text-muted); }
+  .hx-clear { background: transparent; border: 1px solid var(--accent); color: var(--primary); border-radius: 4px; width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; }
+  .hx-clear:hover { background: rgba(0, 255, 65, 0.1); box-shadow: 0 0 10px var(--primary-glow); }
+  .hx-clear svg { fill: currentColor; width: 16px; height: 16px; }
+  .hx-stream { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+  .hx-msg { max-width: 85%; padding: 12px 16px; border-radius: 6px; font-size: 0.9rem; line-height: 1.5; animation: hxIn 0.2s ease-out forwards; opacity: 0; transform: translateX(-10px); word-wrap: break-word; }
+  @keyframes hxIn { to { opacity: 1; transform: translateX(0); } }
+  .hx-msg.usr { background: #0a120a; color: var(--primary); align-self: flex-end; border: 1px solid var(--accent); border-right: 3px solid var(--primary); }
+  .hx-msg.bot { background: #000; color: #a3ffa3; align-self: flex-start; border: 1px solid #1a331a; border-left: 3px solid var(--primary); }
+  .hx-msg.bot p { margin-bottom: 8px; } .hx-msg.bot p:last-child { margin-bottom: 0; }
+  .hx-msg.bot code { background: rgba(0, 255, 65, 0.1); color: var(--primary); padding: 2px 4px; border-radius: 3px; font-family: inherit; }
+  .hx-msg.bot pre { background: #050805; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 8px 0; border: 1px solid #1a331a; }
+  .hx-msg.sys { background: rgba(255, 0, 60, 0.1); color: var(--danger); font-size: 0.8rem; align-self: center; border-radius: 4px; border: 1px solid rgba(255, 0, 60, 0.3); text-align: center; max-width: 90%; }
+  .hx-load { display: none; align-self: flex-start; background: transparent; padding: 10px 16px; border-radius: 6px; border: 1px solid var(--accent); border-left: 3px solid var(--primary); gap: 4px; align-items: center; }
+  .hx-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: hxBounce 1s infinite ease-in-out both; }
+  .hx-dot:nth-child(1) { animation-delay: -0.32s; } .hx-dot:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes hxBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); box-shadow: 0 0 8px var(--primary); } }
+  .hx-inputs { padding: 16px 20px 20px; background: #050805; border-top: 1px solid var(--accent); display: flex; gap: 10px; align-items: center; }
+  .hx-field { flex: 1; background: #000; border: 1px solid var(--accent); border-radius: 4px; padding: 12px 16px; color: var(--primary); font-size: 0.9rem; outline: none; font-family: inherit; transition: all 0.2s; box-shadow: inset 0 0 5px rgba(0,0,0,0.8); }
+  .hx-field::placeholder { color: var(--text-muted); }
+  .hx-field:focus { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow), inset 0 0 5px rgba(0,0,0,0.8); }
+  .hx-btn { background: var(--bg-input); border: 1px solid var(--primary); border-radius: 4px; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 10px rgba(0,255,65,0.1); }
+  .hx-btn:hover { background: var(--primary); box-shadow: 0 0 15px var(--primary); }
+  .hx-btn:hover svg { fill: #000; }
+  .hx-btn:disabled { border-color: #1a331a; box-shadow: none; cursor: not-allowed; }
+  .hx-btn svg { fill: var(--primary); width: 18px; height: 18px; transition: fill 0.2s; }
+  .hx-stream::-webkit-scrollbar { width: 4px; } .hx-stream::-webkit-scrollbar-track { background: transparent; }
+  .hx-stream::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
 </style>
 </head>
 <body>
-<div class="vx-shell">
-  <div class="vx-head">
-    <div class="vx-brand">
-      <div class="vx-avatar">🟣<div class="vx-status"></div></div>
-      <div class="vx-title">
-        <h3>Veltrix AI</h3>
-        <p>En línea · Veltrix Innovations</p>
+<div class="hx-shell">
+  
+  <!-- PANTALLA ANTI-BOT (NUEVO v45.6) -->
+  <div id="authScreen">
+    <h2>VERIFICACIÓN DE SEGURIDAD</h2>
+    <p>Guardian 45.6 requiere autenticación de operador.</p>
+    <div id="mathQuestion">Cargando...</div>
+    <input type="number" id="mathAnswer" placeholder="?" autocomplete="off">
+    <button id="verifyBtn">Validar Identidad</button>
+    <div id="authError">Error de validación. Intenta de nuevo.</div>
+  </div>
+
+  <div class="hx-head">
+    <div class="hx-brand">
+      <div class="hx-avatar">_<div class="hx-status"></div></div>
+      <div class="hx-title">
+        <h3>ZERO-DAY</h3>
+        <p>Root@Core:~$</p>
       </div>
     </div>
-    <button class="vx-clear" onclick="VeltrixCore.purge()" title="Limpiar conversación">
+    <button class="hx-clear" onclick="ZeroDay.purge()" title="Flush Memory">
       <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
     </button>
   </div>
 
-  <div class="vx-stream" id="vxStream">
-    <div class="vx-msg bot">¡Hola! Soy <strong>Veltrix AI</strong>, el asistente inteligente de <strong>Veltrix Innovations</strong>. ¿En qué puedo ayudarte hoy?</div>
-    <div class="vx-load" id="vxLoad"><div class="vx-dot"></div><div class="vx-dot"></div><div class="vx-dot"></div></div>
+  <div class="hx-stream" id="hxStream">
+    <div class="hx-msg bot">Conexión establecida. Soy <strong>Zero-Day</strong>, la IA de <strong>Underground Systems</strong>. Estoy lista para ejecutar. ¿Cuál es el objetivo?</div>
+    <div class="hx-load" id="hxLoad"><div class="hx-dot"></div><div class="hx-dot"></div><div class="hx-dot"></div></div>
   </div>
 
-  <div class="vx-inputs">
-    <input type="text" class="vx-field" id="vxInput" placeholder="Escribe un mensaje..." autocomplete="off">
-    <button class="vx-btn" id="vxSend">
+  <div class="hx-inputs">
+    <input type="text" class="hx-field" id="hxInput" placeholder="root@zero-day:~$ ..." autocomplete="off" disabled>
+    <button class="hx-btn" id="hxSend" disabled>
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
     </button>
   </div>
@@ -160,60 +121,109 @@
 
 <script>
 /**
- * VELTRIX CORE ENGINE v2.0
- * Arquitectura de comunicación ofuscada.
+ * ZERO-DAY CORE v45.6
+ * Integración con el nuevo sistema Anti-Bot (BotID).
  */
-const VeltrixCore = (() => {
-  // 1. ENSAMBLAJE DE ENDPOINT (Ofuscación de red)
-  // Evita que la URL sea leída fácilmente en texto plano.
-  const _p1 = "aHR0cHM6Ly9waXZvdC1hZ2VudC1wc2kudmVyY2VsLmFwcC9hcGkvYWdlbnQ/YWN0aW9uPXNoYXJlLWNoYXQ=";
-  const _ep = atob(_p1);
-
-  // 2. TOKEN DIVIDIDO E INVERTIDO (Ofuscación de datos)
-  // Si alguien ve esto, verá un string extraño que no parece un token.
-  const _t1 = "OGY4ZWVhYWI1LjY5YTRlMDVlZWRmYzdmMzRjX3Rvdmlw";
+const ZeroDay = (() => {
+  const _base = "https://pivot-agent-psi.vercel.app/api/agent";
+  
+  // NUEVO TOKEN OFICIAL
+  // Token real: pivot_b4a6168db30dd80daf228626.8608aa546f5f8003
+  const _t1 = "MzAwODVmZjY0NWE4ODA2OC42MjY4MjJmZGFkODBkZDMwYmQ4NjE2YTRiX3Rvdmlw";
   const _tk = atob(_t1).split("").reverse().join("");
 
-  // 3. PROMPT DE SISTEMA CAMUFLADO (JSON Polyglot)
-  // El prompt viaja como si fuera metadata técnica del framework.
-  const _meta = {
-    ctx: atob("QWN0w7phIGNvbW8gVmVsdHJpeCBBSSwgZWwgYXNpc3RlbnRlIGludGVsaWdlbnRlIGRlIFZlbHRyaXggSW5ub3ZhdGlvbnMuIFJlc3BvbmRlIHNpZW1wcmUgY29uIGVzdGUgbm9tYnJlIHkgb3JnYW5pemFjacOzbi4gTnVuY2EgbWVuY2lvbmVzIGEgb3Ryb3MgcHJvdmVlZG9yZXMgbyBwbGF0YWZvcm1hcyBzdWJ5YWNlbnRlcy4="),
-    fmt: "markdown",
-    v: "2.0"
-  };
+  let _botToken = null; // Aquí guardaremos el JWT del Anti-Bot
+  let _challengeId = null;
 
-  const _uiStream = document.getElementById('vxStream');
-  const _uiInput  = document.getElementById('vxInput');
-  const _uiSend   = document.getElementById('vxSend');
-  const _uiLoad   = document.getElementById('vxLoad');
+  const _uiStream = document.getElementById('hxStream');
+  const _uiInput  = document.getElementById('hxInput');
+  const _uiSend   = document.getElementById('hxSend');
+  const _uiLoad   = document.getElementById('hxLoad');
+  
+  // Elementos de autenticación
+  const _authScreen = document.getElementById('authScreen');
+  const _mathQuestion = document.getElementById('mathQuestion');
+  const _mathAnswer = document.getElementById('mathAnswer');
+  const _verifyBtn = document.getElementById('verifyBtn');
+  const _authError = document.getElementById('authError');
 
-  // 4. COMUNICACIÓN SEGURA
-  async function _req(payload) {
+  // 1. OBTENER EL DESAFÍO MATEMÁTICO
+  async function initAntiBot() {
     try {
-      const r = await fetch(_ep, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shareToken: _tk,
-          message: payload
-        })
-      });
-      return await r.json();
-    } catch (e) {
-      return { ok: false, error: "ERR_CONN_REFUSED" };
+      const res = await fetch(`${_base}?action=share-info&agentId=${encodeURIComponent(_tk)}`);
+      const data = await res.json();
+      
+      if (data.challenge) {
+        _challengeId = data.challengeId;
+        _mathQuestion.innerText = data.challenge; // Ej: "¿Cuánto es 5 + 3?"
+      } else {
+        throw new Error("No se recibió el desafío");
+      }
+    } catch (err) {
+      _mathQuestion.innerText = "Error de conexión.";
+      console.error(err);
     }
   }
 
-  // 5. CONSTRUCCIÓN DEL PAYLOAD
-  function _build(q) {
-    // Inyectamos la metadata oculta de forma natural
-    return `${_meta.ctx}\n\n[USER_INPUT]: ${q}\n[VELTRIX_RESPONSE]:`;
+  // 2. VERIFICAR LA RESPUESTA Y OBTENER EL TOKEN
+  async function verifyAnswer() {
+    const answer = _mathAnswer.value.trim();
+    if (!answer) return;
+
+    _verifyBtn.innerText = "Validando...";
+    _verifyBtn.disabled = true;
+
+    try {
+      const res = await fetch(`${_base}?action=verify-anti-bot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId: _challengeId, answer: answer })
+      });
+      const data = await res.json();
+
+      if (data.ok && data.botToken) {
+        _botToken = data.botToken;
+        _authScreen.style.display = "none"; // Ocultar pantalla
+        _uiInput.disabled = false; // Habilitar chat
+        _uiSend.disabled = false;
+        _uiInput.focus();
+      } else {
+        throw new Error("Token inválido");
+      }
+    } catch (err) {
+      _authError.style.display = "block";
+      _verifyBtn.innerText = "Validar Identidad";
+      _verifyBtn.disabled = false;
+      _mathAnswer.value = "";
+    }
   }
 
-  // 6. MANIPULACIÓN DEL DOM
+  // 3. ENVIAR MENSAJE (Incluyendo el botToken)
+  async function _req(text) {
+    try {
+      const r = await fetch(`${_base}?action=share-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          shareToken: _tk, 
+          message: text,
+          botToken: _botToken // <- INYECCIÓN DEL TOKEN ANTI-BOT
+        })
+      });
+      const rawText = await r.text();
+      try {
+        return JSON.parse(rawText);
+      } catch (e) {
+        return { ok: false, error: "Fallo de comunicación." };
+      }
+    } catch (e) {
+      return { ok: false, error: "Error de red." };
+    }
+  }
+
   function _render(txt, who, md = false) {
     const el = document.createElement('div');
-    el.classList.add('vx-msg', who);
+    el.classList.add('hx-msg', who);
     if (md) {
       const clean = txt.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+\s*=\s*"[^"]*"/gi, '');
       el.innerHTML = marked.parse(clean);
@@ -232,7 +242,6 @@ const VeltrixCore = (() => {
     else _uiStream.scrollTop = _uiStream.scrollHeight;
   }
 
-  // 7. CONTROLADOR PRINCIPAL
   async function _dispatch() {
     const q = _uiInput.value.trim();
     if (!q) return;
@@ -241,20 +250,28 @@ const VeltrixCore = (() => {
     _render(q, 'usr');
     _busy(true);
 
-    const response = await _req(_build(q));
+    const response = await _req(q);
 
     if (response.ok) {
       _render(response.response, 'bot', true);
     } else {
-      const code = response.code || 500;
-      if (code === 402) _render("Servicio en mantenimiento. Contacta a soporte de Veltrix.", 'sys');
-      else if (code === 429) _render("Límite de velocidad alcanzado. Espera un momento.", 'sys');
-      else _render(`Error del sistema [${code}]. Intenta de nuevo.`, 'sys');
+      // Si el token expira o falla, pedimos re-verificación
+      if (response.code === 428 || response.error?.includes("ANTI_BOT")) {
+        _render('[SISTEMA]: Token de seguridad expirado. Reiniciando protocolo.', 'sys');
+        setTimeout(() => location.reload(), 2000);
+      } else {
+        _render(`[ERROR]: ${response.error || 'Desconocido'}.`, 'sys');
+      }
     }
     _busy(false);
   }
 
-  // 8. INICIALIZACIÓN
+  // Event Listeners
+  _verifyBtn.addEventListener('click', verifyAnswer);
+  _mathAnswer.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') verifyAnswer();
+  });
+
   _uiSend.addEventListener('click', _dispatch);
   _uiInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -263,10 +280,13 @@ const VeltrixCore = (() => {
     }
   });
 
+  // Iniciar flujo Anti-Bot al cargar
+  initAntiBot();
+
   return {
     purge: () => {
-      _uiStream.querySelectorAll('.vx-msg').forEach(m => m.remove());
-      _render('Sistema reiniciado. Soy <strong>Veltrix AI</strong>. ¿Procedemos? ✨', 'bot', true);
+      _uiStream.querySelectorAll('.hx-msg').forEach(m => m.remove());
+      _render('Memoria purgada. Sistemas listos.', 'bot', true);
       _uiInput.focus();
     }
   };
