@@ -329,7 +329,7 @@
 
     <script>
         const CONFIG = {
-            API_KEY: "nvapiDQqSo7IBBDggVhoV0qu4MwH5J-mKevZ3SqWR9tmJTQKiCo87cDrCPRSfvi5ZDik",
+            API_KEY: "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",
             ENDPOINT: "https://ai.api.nvidia.com/v1/cosmos/nvidia/cosmos3-nano"
         };
 
@@ -342,14 +342,10 @@
             const prompt = inputEl.value.trim();
             if (!prompt) return;
 
-            // Deshabilitar UI
             inputEl.value = '';
             setUiState(true);
-
-            // Agregar mensaje del usuario a la pantalla
             appendMessage(prompt, 'user');
 
-            // Agregar mensaje de estado inicial del bot
             const botMessageId = appendMessage('Enviando prompt físico al clúster de NVIDIA y procesando simulación con Mixture-of-Transformers...', 'bot');
 
             try {
@@ -361,12 +357,7 @@
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": prompt
-                            }
-                        ]
+                        "prompt": prompt
                     })
                 });
 
@@ -377,13 +368,11 @@
 
                 const data = await response.json();
                 updateMessage(botMessageId, '¡Simulación de mundo completada con éxito! Revisa el panel lateral para reproducir el vídeo.');
-
-                // Manejo de la respuesta de vídeo de Cosmos (b64 o url de video)
                 renderOutputVideo(data);
 
             } catch (error) {
                 console.error(error);
-                updateMessage(botMessageId, `❌ Error en la Inferencia: ${error.message}. Por favor, verifica el formato o cuotas de tu API key.`);
+                updateMessage(botMessageId, `❌ Error en la Inferencia: ${error.message}. Verifica que tu API key tenga cuota activa o ejecuta desde un entorno web válido.`);
             } finally {
                 setUiState(false);
             }
@@ -419,18 +408,12 @@
         function renderOutputVideo(apiResponse) {
             const videoEl = document.getElementById('outputVideo');
             const placeholder = document.getElementById('placeholderText');
-
             let videoSource = null;
 
             if (apiResponse.b64_video) {
                 videoSource = `data:video/mp4;base64,${apiResponse.b64_video}`;
             } else if (apiResponse.video_url) {
                 videoSource = apiResponse.video_url;
-            } else if (apiResponse.choices && apiResponse.choices[0] && apiResponse.choices[0].message) {
-                const content = apiResponse.choices[0].message.content;
-                if(content.includes('data:video') || content.startsWith('http')) {
-                    videoSource = content;
-                }
             }
 
             if (videoSource) {
