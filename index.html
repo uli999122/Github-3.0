@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZERO ART // Underground Core</title>
+<title>ZERO ART // Core Access</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
 <style>
+  /* ... (Los mismos estilos de siempre, idénticos al código anterior) ... */
   :root { --bg-main: #030503; --bg-card: #080c08; --bg-input: #0a120a; --primary: #00ff41; --primary-glow: rgba(0, 255, 65, 0.3); --accent: #008f11; --text-main: #d1ffd1; --text-muted: #4a7a4a; --danger: #ff003c; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background-color: var(--bg-main); background-image: linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px); background-size: 20px 20px; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--text-main); }
@@ -55,7 +56,7 @@
       <div class="hx-avatar">_<div class="hx-status"></div></div>
       <div class="hx-title">
         <h3>ZERO ART</h3>
-        <p>Underground Core v3.0</p>
+        <p>Core Access</p>
       </div>
     </div>
     <button class="hx-clear" onclick="ZeroArt.purge()" title="Flush Memory">
@@ -78,10 +79,10 @@
 
 <script>
 const ZeroArt = (() => {
-  // 1. URL CORRECTA PARA EL AGENT.JS
-  const _apiUrl = "https://pivot-agent-psi.vercel.app/api/agent?action=chat";
+  // RUTAS
+  const _urlOpenAI = "https://pivot-agent-psi.vercel.app/v1/chat/completions";
+  const _urlAction = "https://pivot-agent-psi.vercel.app/api/agent?action=v1-chat-completions"; // Ruta camuflada
   
-  // TUS CREDENCIALES
   const _apiKey = "pk_20d935b979408f12862034045d84ca72b22d3a49d550c60115769854f2ab55d8"; 
   const _agentId = "pivot_ff7060b49974c90185d07bac"; 
 
@@ -90,38 +91,47 @@ const ZeroArt = (() => {
   const _uiSend   = document.getElementById('hxSend');
   const _uiLoad   = document.getElementById('hxLoad');
 
-  let _history = []; 
+  let _history = [];
 
   async function _req(text) {
-    try {
-      // 2. PAYLOAD CORRECTO
-      const payload = {
-        agentId: _agentId,
-        message: text,
-        history: _history
-      };
+    const payload = {
+      agentId: _agentId,
+      model: "pivot-agent",
+      messages: [..._history, { role: "user", content: text }]
+    };
 
-      const r = await fetch(_apiUrl, {
+    try {
+      // INTENTO 1: Ruta Oficial de OpenAI
+      let r = await fetch(_urlOpenAI, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          "Authorization": `Bearer ${_apiKey}` 
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${_apiKey}` },
         body: JSON.stringify(payload)
       });
       
-      const rawText = await r.text();
+      let rawText = await r.text();
+      
+      // Si da el error de acción requerida, disparamos el INTENTO 2
+      if (rawText.includes("MISSING_ACTION")) {
+        console.warn("⚠️ MISSING_ACTION detectado. Reintentando con la ruta de acciones...");
+        r = await fetch(_urlAction, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${_apiKey}` },
+          body: JSON.stringify(payload)
+        });
+        rawText = await r.text();
+      }
+
       console.log("🚨 [DEBUG PIVOT] Status:", r.status);
       console.log("📦 Respuesta:", rawText);
       
       try {
         return JSON.parse(rawText);
       } catch (e) {
-        return { rawError: rawText, status: r.status };
+        return { error: { message: rawText }, status: r.status };
       }
     } catch (e) {
       console.error("Error Fetch Chat:", e);
-      return { rawError: e.message, status: "NETWORK_ERROR" };
+      return { error: { message: e.message } };
     }
   }
 
@@ -154,26 +164,15 @@ const ZeroArt = (() => {
     _render(q, 'usr');
     _busy(true);
 
-    _history.push({ role: "user", content: q });
     const response = await _req(q);
 
-    // 3. MANEJO DE RESPUESTA (agent.js devuelve {ok: true, response: "..."})
-    if (response.ok && response.response) {
-      const botReply = response.response;
+    if (response.choices && response.choices[0] && response.choices[0].message) {
+      const botReply = response.choices[0].message.content;
+      _history.push({ role: "user", content: q });
       _history.push({ role: "assistant", content: botReply });
       _render(botReply, 'bot', true);
     } else {
-      // RADAR DE ERRORES
-      let errorMsg = response.error || response.code || 'Error desconocido';
-      
-      if (response.code === 'AGENT_IN_TRAINING') {
-        errorMsg = "El agente está en fase de entrenamiento (48h). No podrá chatear hasta que termine.";
-      } else if (response.code === 'INVALID_API_KEY') {
-        errorMsg = "La API Key no es válida o no empieza con 'pk_'. Revisa tu panel de Pivot.";
-      } else if (response.code === 'MISSING_ACTION') {
-        errorMsg = "Falta el parámetro action en la URL (Bug del código).";
-      }
-
+      let errorMsg = response.error?.message || response.error || response.code || 'Error desconocido';
       _render(`[ERROR DEL NÚCLEO]: ${errorMsg}`, 'sys');
     }
     _busy(false);
